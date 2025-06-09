@@ -1,14 +1,9 @@
-# dashboard/app.py
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from millify import millify
 
-st.set_page_config(
-    page_title="Grant Funding Dashboard",
-    page_icon="",
-)
+st.set_page_config(page_title="Grant Funding Dashboard", page_icon="")
 
 U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
        "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
@@ -48,14 +43,14 @@ sfu_by_year = data[data["Institution"] == "Simon Fraser University"].groupby('Co
 u15_by_year = (data[data["Institution"].isin(U15)].groupby('CompetitionFY')['Total_Amount'].sum()/len(U15))
 fig = plt.figure(figsize=(12, 6))
 plt.plot(sfu_by_year.index, sfu_by_year.values, label='SFU', marker='o')
-plt.plot(u15_by_year.index, u15_by_year.values, label="U15 mean", marker='o')
+plt.plot(u15_by_year.index, u15_by_year.values, label="U15 Mean", marker='o')
 plt.title("Grant Funding Over Time")
 plt.xlabel("CompetitionFY")
 plt.ylabel("Total Funding Amount")
 plt.legend()
 plt.grid(True)
-
 st.pyplot(fig)
+
 st.title("Market Share Dashboard")
 
 agency_market_share = []
@@ -74,8 +69,12 @@ if select_year_mode == "Single Year":
     
 
 elif select_year_mode == "Range of Years":
-    from_year = st.selectbox("Select From Year:", sorted(data['CompetitionFY'].unique()))
-    to_year = st.selectbox("Select To Year:", sorted(data['CompetitionFY'].unique(), reverse=True))
+    column1, column2 = st.columns(2)
+
+    with column1:
+        from_year = st.selectbox("Select From Year:", sorted(data['CompetitionFY'].unique()))
+    with column2:
+        to_year = st.selectbox("Select To Year:", sorted(data['CompetitionFY'].unique(), reverse=True))
 
     sfu_total_amount = (data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum())
     sfu_market_share = ((sfu_total_amount / data[(data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum()) * 100)
@@ -87,8 +86,12 @@ elif select_year_mode == "Range of Years":
         agency_market_share.append({"University": u15_university, "Grant Amount": f"{millify(total_u15_amount)}", "Market Share (%)": f"{market_share:.2f}"})
 
 elif select_year_mode == "Compare Years":
-    year1 = st.selectbox("Select Year 1:", sorted(data['CompetitionFY'].unique()))
-    year2 = st.selectbox("Select Year 2:", sorted(data['CompetitionFY'].unique()))
+    column1, column2 = st.columns(2)
+
+    with column1:
+        year1 = st.selectbox("Select Year 1:", sorted(data['CompetitionFY'].unique()))
+    with column2:
+        year2 = st.selectbox("Select Year 2:", sorted(data['CompetitionFY'].unique()))
     
     sfu_year1_total = (data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY']== year1)]["Total_Amount"].sum())
     sfu_year2_total = (data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY']== year2)]["Total_Amount"].sum())
