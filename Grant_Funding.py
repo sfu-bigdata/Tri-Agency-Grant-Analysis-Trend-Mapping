@@ -9,6 +9,11 @@ U15 = ["University of Alberta", "University of British Columbia", "University of
        "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
        "Queen's University", "University of Saskatchewan", "University of Toronto", "University of Waterloo", "University of Western Ontario"]
 
+U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
+       "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
+       "Queen's University", "University of Saskatchewan", "University of Toronto", "University of Waterloo", "University of Western Ontario",
+       "University of Victoria"] # U15 + UVic
+
 # Load and clean data
 TRIAGENCY_DATA = pd.read_csv("clean_data/TRIAGENCY_DATA.csv")
 U15_DATA = TRIAGENCY_DATA[TRIAGENCY_DATA["Institution"].isin(U15)]
