@@ -130,8 +130,8 @@ elif select_year_mode == "Compare Years":
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
 
 if select_year_mode == "Compare Years":
-    st.write(f"{field_type} {year2} Market Share")
-
+    st.write(f"{field_type} Market Share Table")
+    
     df = pd.DataFrame(table_data, columns=columns)
     df["Change (%)"] = df["Change (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
     st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
