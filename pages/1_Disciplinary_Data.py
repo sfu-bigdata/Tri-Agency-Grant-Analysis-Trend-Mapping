@@ -113,7 +113,7 @@ elif select_year_mode == "Compare Years":
     data = agency_data[agency_data["CompetitionFY"] == year2]
 
     # Main Discipline
-    data_year1 = data_year1.groupby(field)['Total_Amount'].sum().nlargest(50).reset_index()
+    data_year1 = data_year1.groupby(field)['Total_Amount'].sum().reset_index()
     data_year2 = data_year2.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
 
     discipline_labels = sorted(data_year2[field].unique())
@@ -124,14 +124,17 @@ elif select_year_mode == "Compare Years":
 
         change = ((data_label_year2["Total_Amount"].sum() - data_label_year1["Total_Amount"].sum()) / data_label_year1["Total_Amount"].sum()) * 100
         color = "red" if change > 0 else "green"
-        table_data.append([label, millify(data_label_year1['Total_Amount'].sum()), millify(data_label_year2['Total_Amount'].sum()), f"{change:.2f}"])
+        table_data.append([label, millify(data_label_year1['Total_Amount'].sum()), millify(data_label_year2['Total_Amount'].sum()), change])
     columns = [field_type, 'Year1 Amount ($)', 'Year2 Amount ($)', 'Change (%)']
 
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
 
 if select_year_mode == "Compare Years":
     st.write(f"{field_type} {year2} Market Share")
-    st.write(pd.DataFrame(table_data, columns=columns).style.set_properties(**{'text-align': 'left'}))
+
+    df = pd.DataFrame(table_data, columns=columns)
+    df["Change (%)"] = df["Change (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
+    st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
 
 else:
     st.write(f"{field_type} Market Share Pie Chart")
@@ -145,4 +148,5 @@ else:
     display_table = st.checkbox("Display Table")
     if display_table:
         st.write(f"{field_type} Market Share Table")
-        st.write(pd.DataFrame(table_data, columns=columns).style.set_properties(**{'text-align': 'left'}))
+        df = pd.DataFrame(table_data, columns=columns)
+        st.markdown(df.to_html(escape=False), unsafe_allow_html=True)

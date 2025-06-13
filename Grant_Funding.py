@@ -65,12 +65,12 @@ if select_year_mode == "Single Year":
 
     sfu_total_amount = (data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY']== year)]["Total_Amount"].sum())
     sfu_market_share = ((sfu_total_amount / data[(data['CompetitionFY'] == year)]["Total_Amount"].sum()) * 100)
-    agency_market_share.append({"University": "Simon Fraser University", "Grant Amount": f"{millify(sfu_total_amount)}", "Market Share (%)": f"{sfu_market_share:.2f}"})
+    agency_market_share.append({"University": "Simon Fraser University", "Grant Amount": f"{millify(sfu_total_amount)}", "Market Share (%)": f"{sfu_market_share:.2f}%"})
 
     for u15_university in U15:
         total_u15_amount = (data[(data["Institution"] == u15_university) & (data['CompetitionFY'] == year)]["Total_Amount"].sum())
         market_share = ((total_u15_amount / data[(data['CompetitionFY'] == year)]["Total_Amount"].sum()) * 100)
-        agency_market_share.append({"University": u15_university, "Grant Amount": f"{millify(total_u15_amount)}", "Market Share (%)": f"{market_share:.2f}"})
+        agency_market_share.append({"University": u15_university, "Grant Amount": f"{millify(total_u15_amount)}", "Market Share (%)": f"{market_share:.2f}%"})
     
 
 elif select_year_mode == "Range of Years":
@@ -83,12 +83,12 @@ elif select_year_mode == "Range of Years":
 
     sfu_total_amount = (data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum())
     sfu_market_share = ((sfu_total_amount / data[(data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum()) * 100)
-    agency_market_share.append({"University": "Simon Fraser University", "Grant Amount": f"{millify(sfu_total_amount)}", "Market Share (%)": f"{sfu_market_share:.2f}"})
+    agency_market_share.append({"University": "Simon Fraser University", "Grant Amount": f"{millify(sfu_total_amount)}", "Market Share (%)": f"{sfu_market_share:.2f}%"})
 
     for u15_university in U15:
         total_u15_amount = (data[(data["Institution"] == u15_university) & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum())
         market_share = ((total_u15_amount / data[(data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum()) * 100)
-        agency_market_share.append({"University": u15_university, "Grant Amount": f"{millify(total_u15_amount)}", "Market Share (%)": f"{market_share:.2f}"})
+        agency_market_share.append({"University": u15_university, "Grant Amount": f"{millify(total_u15_amount)}", "Market Share (%)": f"{market_share:.2f}%"})
 
 elif select_year_mode == "Compare Years":
     column1, column2 = st.columns(2)
@@ -104,7 +104,7 @@ elif select_year_mode == "Compare Years":
     sfu_year1_market_share = ((sfu_year1_total / data[(data['CompetitionFY'] == year1)]["Total_Amount"].sum()) * 100)
     sfu_year2_market_share = ((sfu_year2_total / data[(data['CompetitionFY'] == year2)]["Total_Amount"].sum()) * 100)
 
-    agency_market_share.append({"University": "Simon Fraser University", "Change in Grant Amount": f"{millify(sfu_year2_total - sfu_year1_total)}", "Change in Market Share (%)": f"{sfu_year2_market_share - sfu_year1_market_share :.2f}"})
+    agency_market_share.append({"University": "Simon Fraser University", "Change in Grant Amount ($)": sfu_year2_total - sfu_year1_total, "Change in Market Share (%)": sfu_year2_market_share - sfu_year1_market_share})
 
     for u15_university in U15:
         u15_year1_total = (data[(data["Institution"] == u15_university) & (data['CompetitionFY']== year1)]["Total_Amount"].sum())
@@ -113,10 +113,23 @@ elif select_year_mode == "Compare Years":
         u15_year1_market_share = ((u15_year1_total / data[(data['CompetitionFY'] == year1)]["Total_Amount"].sum()) * 100)
         u15_year2_market_share = ((u15_year2_total / data[(data['CompetitionFY'] == year2)]["Total_Amount"].sum()) * 100)
 
-        agency_market_share.append({"University": u15_university, "Change in Grant Amount": f"{millify(u15_year2_total - u15_year1_total)}", "Change in Market Share (%)": f"{u15_year2_market_share - u15_year1_market_share:.2f}"})
+        agency_market_share.append({"University": u15_university, "Change in Grant Amount ($)": u15_year2_total - u15_year1_total, "Change in Market Share (%)": u15_year2_market_share - u15_year1_market_share})
 
-# Display the market share list in a table
-st.markdown(f"#### Market Share by University Given Agency: {dashboard_type}")
-market_share_table = pd.DataFrame(agency_market_share)
-st.write(market_share_table.style.set_properties(**{'text-align': 'left'}))
+if select_year_mode == "Compare Years":
+    # Display the market share list in a table
+    st.markdown(f"#### Market Share by University Given Agency: {dashboard_type}")
+    market_share_table = pd.DataFrame(agency_market_share)
+
+    market_share_table["Change in Grant Amount ($)"] = market_share_table["Change in Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x)}</span>' if x < 0 else f'<span style="color: green;">{millify(x)}</span>')
+    # market_share_table["Change in Grant Amount ($)"] = market_share_table["Change in Grant Amount ($)"].apply(lambda x: millify(x))
+
+    market_share_table["Change in Market Share (%)"] = market_share_table["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
+    
+    st.markdown(market_share_table.to_html(escape=False), unsafe_allow_html=True)
+else:
+    # Display the market share list in a table
+    st.markdown(f"#### Market Share by University Given Agency: {dashboard_type}")
+    market_share_table = pd.DataFrame(agency_market_share)
+
+    st.markdown(market_share_table.to_html(escape=False), unsafe_allow_html=True)
 
