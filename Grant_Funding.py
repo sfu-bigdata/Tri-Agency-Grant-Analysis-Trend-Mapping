@@ -21,6 +21,17 @@ SFU_DATA = TRIAGENCY_DATA[TRIAGENCY_DATA["Institution"] == "Simon Fraser Univers
 
 st.title("Grant Funding Dashboard")
 
+# column1, column2, column3 = st.columns(3)
+
+# agency_cols = ["CIHR", "NSERC", "SSHRC"]
+# fig, ax = plt.subplots()
+# ax.boxplot([TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == agency]["Total_Amount"].dropna() for agency in agency_cols], labels=agency_cols) # Remove NaN values
+# ax.set_title('Total Funding by Agency')
+# ax.set_xlabel('Agency')
+# ax.set_ylabel('Total Funding')
+
+# st.pyplot(fig)
+
 # Add button to switch between dashboards
 dashboard_type = st.selectbox("Select Agency:", ["All", "CIHR", "NSERC", "SSHRC"])
 
@@ -35,21 +46,6 @@ elif dashboard_type == "NSERC":
 elif dashboard_type == "SSHRC":
     data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "SSHRC"]
 
-# total_revenue = millify(data["Total_Amount"].sum(), precision=2)
-# st.write(f"Total Agency Funding: {total_revenue}")
-
-# Show metrics
-# sfu_revenue = millify(data[data["Institution"] == "Simon Fraser University"]["Total_Amount"].sum(), precision=2)
-# u15_avg_revenue = millify((data[data["Institution"].isin(U15)]["Total_Amount"].sum()/len(U15)), precision=2)
-# total_revune = millify(data["Total_Amount"].sum(), precision=2)
-
-# Use Markdown to format the metrics string
-# total_rev_string = f"Total Revenue: {total_revune}"
-# uni_rev_string = f"SFU Revenue: {sfu_revenue}, Average U15 Revenue: {u15_avg_revenue}"
-# st.markdown(f"#### Metrics\n{metrics_string}")
-# st.title("Metrics")
-# st.write()
-# st.write(metrics_string)
 
 column1, column2, _, = st.columns(3)
 with column1:

@@ -39,11 +39,13 @@ table_data = []
 
 st.title(f"{field_type} Trends for {dashboard_type}")
 
-discipline_revenue = agency_data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
+# discipline_revenue = agency_data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
 custom_labels = st.checkbox("Use custom labels")
 if custom_labels:
-    discipline_labels = st.multiselect('Select disciplines', sorted(discipline_revenue[field].unique()), default=discipline_revenue[field].unique())
+    discipline_revenue = agency_data.groupby(field)['Total_Amount'].sum()
+    discipline_labels = st.multiselect('Select disciplines', sorted(discipline_revenue.reset_index()[field].unique()), default=discipline_revenue.nlargest(10).reset_index()[field])
 else:
+    discipline_revenue = agency_data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
     discipline_labels = sorted(discipline_revenue[field].unique())
 
 fig = plt.figure(figsize=(12, 6))
@@ -150,3 +152,22 @@ else:
         st.write(f"{field_type} Market Share Table")
         df = pd.DataFrame(table_data, columns=columns)
         st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+
+selected_university = st.selectbox("Select University:", ["Simon Fraser University"] + U15)
+university_data = agency_data[agency_data['Institution'] == selected_university]
+
+# Main Discipline
+discipline_revenue = university_data.groupby(field)['Total_Amount'].sum()
+discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])
+
+fig = plt.figure(figsize=(12, 6))
+for label in discipline_labels:
+    grouped_label = university_data[university_data[field] == label].groupby('CompetitionFY')['Total_Amount'].sum().reset_index()
+    plt.plot(grouped_label['CompetitionFY'], grouped_label['Total_Amount'], label=label, marker='o')
+plt.title(f"Disciplinary Funding for {selected_university}")
+plt.ylabel("Total Funding Amount")
+plt.xlabel("CompetitionFY")
+plt.grid(True)
+plt.legend()
+
+st.pyplot(fig)
