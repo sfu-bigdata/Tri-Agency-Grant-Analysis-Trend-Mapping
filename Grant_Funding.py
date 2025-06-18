@@ -46,7 +46,20 @@ elif dashboard_type == "NSERC":
 elif dashboard_type == "SSHRC":
     data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "SSHRC"]
 
+st.subheader(f"Total Funding Over Time for {dashboard_type}")
 
+fig = plt.figure(figsize=(12, 6))
+total_funding = data.groupby('CompetitionFY')['Total_Amount'].sum()
+plt.plot(total_funding.index, total_funding.values, marker='o', label="Total Funding")
+plt.xlabel("Year")
+plt.ylabel("Funding Amount")
+plt.title("Total Agency Funding Over Time")
+plt.legend()
+plt.grid(True)
+st.pyplot(fig)
+
+
+st.subheader(f"University Funding Over Time for {dashboard_type}")
 column1, column2, _, = st.columns(3)
 with column1:
     specific_u15 = st.checkbox("Select U15 Universities")
@@ -93,12 +106,12 @@ else:
         plt.plot(u15_by_year.index, u15_by_year.values, label="U15 Mean", marker='o')
 
 if display_market:
-    plt.title("Market Share Over Time")
+    plt.title("University Market Share Over Time")
     plt.ylabel("Market Share (%)")
 
 else:
-    plt.title("Grant Funding Over Time")
-    plt.ylabel("Total Funding Amount")
+    plt.title("University Funding Over Time")
+    plt.ylabel("Funding Amount")
 plt.xlabel("CompetitionFY")
 plt.legend()
 plt.grid(True)

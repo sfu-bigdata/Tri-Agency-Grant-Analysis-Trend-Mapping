@@ -76,7 +76,7 @@ if select_year_mode == "Single Year":
 
     for label in discipline_labels:
         md_label_data = data[data[field] == label]
-        table_data.append([label, millify(md_label_data['Total_Amount'].sum()), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100)])
+        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1)])
     columns = [field_type, 'Year Amount ($)', 'Market Share (%)']
 
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10) # should be a faster way to do this
@@ -96,7 +96,7 @@ elif select_year_mode == "Range of Years":
 
     for label in discipline_labels:
         md_label_data = data[data[field] == label]
-        table_data.append([label, millify(md_label_data['Total_Amount'].sum()), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100)])
+        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1)])
     columns = [field_type, 'Year Amount ($)', 'Market Share (%)']
 
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
@@ -126,7 +126,7 @@ elif select_year_mode == "Compare Years":
 
         change = ((data_label_year2["Total_Amount"].sum() - data_label_year1["Total_Amount"].sum()) / data_label_year1["Total_Amount"].sum()) * 100
         color = "red" if change > 0 else "green"
-        table_data.append([label, millify(data_label_year1['Total_Amount'].sum()), millify(data_label_year2['Total_Amount'].sum()), change])
+        table_data.append([label, millify(data_label_year1['Total_Amount'].sum(), precision=1), millify(data_label_year2['Total_Amount'].sum(), precision=1), change])
     columns = [field_type, 'Year1 Amount ($)', 'Year2 Amount ($)', 'Change (%)']
 
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
