@@ -19,20 +19,35 @@ TRIAGENCY_DATA = pd.read_csv("clean_data/TRIAGENCY_DATA.csv")
 U15_DATA = TRIAGENCY_DATA[TRIAGENCY_DATA["Institution"].isin(U15)]
 SFU_DATA = TRIAGENCY_DATA[TRIAGENCY_DATA["Institution"] == "Simon Fraser University"]
 
+data = TRIAGENCY_DATA.copy()
+
 st.title("Grant Funding Dashboard")
 
-# column1, column2, column3 = st.columns(3)
+total_funding = st.checkbox("Display Total Funding")
+if total_funding:
+    fig = plt.figure(figsize=(12, 6))
+    total_funding = data.copy().groupby('CompetitionFY')['Total_Amount'].sum()
+    plt.plot(total_funding.index, total_funding.values, marker='o', label="Total Funding")
+    plt.xlabel("Year")
+    plt.ylabel("Funding Amount")
+    plt.title("Total Agency Funding Over Time")
+    plt.legend()
+    plt.grid(True)
+    st.pyplot(fig)
 
-# agency_cols = ["CIHR", "NSERC", "SSHRC"]
-# fig, ax = plt.subplots()
-# ax.boxplot([TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == agency]["Total_Amount"].dropna() for agency in agency_cols], labels=agency_cols) # Remove NaN values
-# ax.set_title('Total Funding by Agency')
-# ax.set_xlabel('Agency')
-# ax.set_ylabel('Total Funding')
+else:
+    agencies_selected = st.multiselect("Select Agencies", ["CIHR", "NSERC", "SSHRC"], ["CIHR", "NSERC", "SSHRC"])
+    fig = plt.figure(figsize=(12, 6))
+    for agency in agencies_selected:
+        total_funding = data[data["Agency"] == agency].copy().groupby('CompetitionFY')['Total_Amount'].sum()
+        plt.plot(total_funding.index, total_funding.values, marker='o', label=f"{agency} Funding")
+    plt.xlabel("Year")
+    plt.ylabel("Funding Amount")
+    plt.title("Total Agency Funding Over Time")
+    plt.legend()
+    plt.grid(True)
+    st.pyplot(fig)
 
-# st.pyplot(fig)
-
-# Add button to switch between dashboards
 dashboard_type = st.selectbox("Select Agency:", ["All", "CIHR", "NSERC", "SSHRC"])
 
 data = TRIAGENCY_DATA.copy()
@@ -46,20 +61,8 @@ elif dashboard_type == "NSERC":
 elif dashboard_type == "SSHRC":
     data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "SSHRC"]
 
-st.subheader(f"Total Funding Over Time for {dashboard_type}")
 
-fig = plt.figure(figsize=(12, 6))
-total_funding = data.groupby('CompetitionFY')['Total_Amount'].sum()
-plt.plot(total_funding.index, total_funding.values, marker='o', label="Total Funding")
-plt.xlabel("Year")
-plt.ylabel("Funding Amount")
-plt.title("Total Agency Funding Over Time")
-plt.legend()
-plt.grid(True)
-st.pyplot(fig)
-
-
-st.subheader(f"University Funding Over Time for {dashboard_type}")
+st.subheader(f"University Funding Over Time for Agency: {dashboard_type}")
 column1, column2, _, = st.columns(3)
 with column1:
     specific_u15 = st.checkbox("Select U15 Universities")
@@ -86,7 +89,6 @@ if specific_u15:
             plt.plot(u15_by_year.index, u15_by_year.values, label=u15_uni, marker='o')
     
 else:
-
     if display_market:
         years = sorted(data["CompetitionFY"].unique())
         sfu_funding = []
