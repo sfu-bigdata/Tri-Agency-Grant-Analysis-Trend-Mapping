@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from millify import millify
+import io
 
 st.set_page_config(page_title="Grant Funding Dashboard", page_icon="")
 
@@ -28,25 +29,29 @@ if total_funding:
     fig = plt.figure(figsize=(12, 6))
     total_funding = data.copy().groupby('CompetitionFY')['Total_Amount'].sum()
     plt.plot(total_funding.index, total_funding.values, marker='o', label="Total Funding")
-    plt.xlabel("Year")
-    plt.ylabel("Funding Amount")
-    plt.title("Total Agency Funding Over Time")
-    plt.legend()
-    plt.grid(True)
-    st.pyplot(fig)
-
 else:
     agencies_selected = st.multiselect("Select Agencies", ["CIHR", "NSERC", "SSHRC"], ["CIHR", "NSERC", "SSHRC"])
     fig = plt.figure(figsize=(12, 6))
     for agency in agencies_selected:
         total_funding = data[data["Agency"] == agency].copy().groupby('CompetitionFY')['Total_Amount'].sum()
         plt.plot(total_funding.index, total_funding.values, marker='o', label=f"{agency} Funding")
-    plt.xlabel("Year")
-    plt.ylabel("Funding Amount")
-    plt.title("Total Agency Funding Over Time")
-    plt.legend()
-    plt.grid(True)
-    st.pyplot(fig)
+
+plt.xlabel("Year")
+plt.ylabel("Funding Amount")
+plt.title("Total Agency Funding Over Time")
+plt.legend()
+plt.grid(True)
+st.pyplot(fig)
+
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+buf.seek(0)
+st.download_button(
+    label="Export Plot",
+    data=buf,
+    file_name=f"agency_funding.png",
+    mime="image/png"
+)
 
 dashboard_type = st.selectbox("Select Agency:", ["All", "CIHR", "NSERC", "SSHRC"])
 
@@ -119,6 +124,16 @@ plt.legend()
 plt.grid(True)
 st.pyplot(fig)
 
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+buf.seek(0)
+st.download_button(
+    label="Export Plot",
+    data=buf,
+    file_name=f"{dashboard_type}_university_funding.png",
+    mime="image/png"
+)
+
 st.title("Table Dashboard")
 
 agency_market_share = []
@@ -187,16 +202,28 @@ elif select_year_mode == "Compare Years":
 if select_year_mode == "Compare Years":
     # Display the market share list in a table
     market_share_table = pd.DataFrame(agency_market_share)
-
     market_share_table["Change in Grant Amount ($)"] = market_share_table["Change in Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x)}</span>' if x < 0 else f'<span style="color: green;">{millify(x)}</span>')
     # market_share_table["Change in Grant Amount ($)"] = market_share_table["Change in Grant Amount ($)"].apply(lambda x: millify(x))
-
     market_share_table["Change in Market Share (%)"] = market_share_table["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
     
     st.markdown(market_share_table.to_html(escape=False), unsafe_allow_html=True)
+    
+    st.download_button(
+        label="Export Table as CSV",
+        data=pd.DataFrame(agency_market_share).to_csv(index=False),
+        file_name=f"{dashboard_type}_market_share_data.csv",
+        mime="text/csv"
+    )
+
 else:
     # Display the market share list in a table
     market_share_table = pd.DataFrame(agency_market_share)
-
     st.markdown(market_share_table.to_html(escape=False), unsafe_allow_html=True)
+
+    st.download_button(
+        label="Export Table as CSV",
+        data=market_share_table.to_csv(index=False),
+        file_name=f"{dashboard_type}_market_share_data.csv",
+        mime="text/csv"
+    )
 

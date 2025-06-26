@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from millify import millify
+import  io
 
 st.set_page_config(page_title="Program Data", page_icon="")
 
@@ -49,5 +50,14 @@ plt.ylabel("Total Funding Amount")
 plt.xlabel("CompetitionFY")
 plt.grid(True)
 plt.legend()
-
 st.pyplot(fig)
+
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+buf.seek(0)
+st.download_button(
+    label="Export Plot",
+    data=buf,
+    file_name=f"{dashboard_type}_university_funding.png",
+    mime="image/png"
+)

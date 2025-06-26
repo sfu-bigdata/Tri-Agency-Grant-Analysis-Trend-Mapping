@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from millify import millify
+import io
 
 st.set_page_config(page_title="Disiplinary Data", page_icon="")
 
@@ -57,8 +58,17 @@ plt.ylabel("Total Funding Amount")
 plt.xlabel("CompetitionFY")
 plt.grid(True)
 plt.legend()
-
 st.pyplot(fig)
+
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+buf.seek(0)
+st.download_button(
+    label="Export Plot",
+    data=buf,
+    file_name=f"{dashboard_type}_{field_type}_funding.png",
+    mime="image/png"
+)
 
 
 st.title(f"{field_type} Market Share")
@@ -138,6 +148,13 @@ if select_year_mode == "Compare Years":
     df["Change (%)"] = df["Change (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
     st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
 
+    st.download_button(
+        label="Export Table as CSV",
+        data=pd.DataFrame(table_data, columns=columns).to_csv(index=False),
+        file_name=f"{dashboard_type}_{field_type}_marketshare_data.csv",
+        mime="text/csv"
+    )
+
 else:
     st.write(f"{field_type} Market Share Pie Chart")
 
@@ -147,11 +164,27 @@ else:
     plt.legend(labels=data.index, loc="center left", bbox_to_anchor=(1.0, 0.8))
     st.pyplot(fig)
 
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+    st.download_button(
+        label="Export Plot",
+        data=buf,
+        file_name=f"{dashboard_type}_{field_type}_marketshare.png",
+        mime="image/png"
+    )
+
     display_table = st.checkbox("Display Table")
     if display_table:
         st.write(f"{field_type} Market Share Table")
         df = pd.DataFrame(table_data, columns=columns)
         st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+        st.download_button(
+            label="Export Table as CSV",
+            data=df.to_csv(index=False),
+            file_name=f"{dashboard_type}_{field_type}_marketshare_data.csv",
+            mime="text/csv"
+        )
 
 selected_university = st.selectbox("Select University:", ["Simon Fraser University"] + U15)
 university_data = agency_data[agency_data['Institution'] == selected_university]
@@ -169,5 +202,14 @@ plt.ylabel("Total Funding Amount")
 plt.xlabel("CompetitionFY")
 plt.grid(True)
 plt.legend()
-
 st.pyplot(fig)
+
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+buf.seek(0)
+st.download_button(
+    label="Export Plot",
+    data=buf,
+    file_name=f"{dashboard_type}_university_{field_type}_marketshare.png",
+    mime="image/png"
+)
