@@ -54,7 +54,7 @@ plt.legend()
 st.pyplot(fig)
 
 buf = io.BytesIO()
-fig.savefig(buf, format="png")
+fig.savefig(buf, format="png", bbox_inches="tight")
 buf.seek(0)
 st.download_button(
     label="Export Plot",
