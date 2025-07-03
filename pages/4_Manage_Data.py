@@ -70,5 +70,4 @@ with col1:
 with col2:
     end_year = st.number_input('Select end year:', value=2023, step=1)
 if st.button("Update Data"):
-
     subprocess.run(['python', 'clean_data.py', str(start_year), str(end_year)])
