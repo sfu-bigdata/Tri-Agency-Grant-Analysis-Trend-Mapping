@@ -36,7 +36,8 @@ else:
         total_funding = data[data["Agency"] == agency].copy().groupby('CompetitionFY')['Total_Amount'].sum()
         plt.plot(total_funding.index, total_funding.values, marker='o', label=f"{agency} Funding")
 
-plt.xlabel("Year")
+plt.xlabel("CompetitionFY")
+plt.xticks(data["CompetitionFY"].unique())
 plt.ylabel("Funding Amount")
 plt.title("Total Agency Funding Over Time")
 plt.legend()
@@ -120,6 +121,7 @@ else:
     plt.title("University Funding Over Time")
     plt.ylabel("Funding Amount")
 plt.xlabel("CompetitionFY")
+plt.xticks(data["CompetitionFY"].unique())
 plt.legend()
 plt.grid(True)
 st.pyplot(fig)

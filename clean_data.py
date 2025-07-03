@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import sys
 import re
 
 from collections import Counter
@@ -14,7 +15,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 import torch.nn as nn
 
-START_YEAR = 2019
+START_YEAR = int(sys.argv[1])
+END_YEAR = int(sys.argv[2])
 
 model_name = "sentence-transformers/all-MiniLM-L6-v2"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -73,7 +75,7 @@ CIHR_DATA.drop_duplicates(inplace=True)
 CIHR_DATA.dropna(subset=["Total_Amount"], inplace=True)
 
 CIHR_DATA['CompetitionFY'] = CIHR_DATA['CompetitionFY']//100 # convert to year (ex. 201920 -> 2019)
-CIHR_DATA = CIHR_DATA[CIHR_DATA["CompetitionFY"] >= START_YEAR]
+CIHR_DATA = CIHR_DATA[(CIHR_DATA["CompetitionFY"] >= START_YEAR) & (CIHR_DATA["CompetitionFY"] <= END_YEAR)]
 CIHR_DATA['CompetitionFY'] = CIHR_DATA['CompetitionFY'].astype(int)
 
 CIHR_DATA['Institution'] = CIHR_DATA['Institution'].fillna(CIHR_DATA['Institution_FR'])
@@ -143,7 +145,7 @@ NSERC_DATA.columns = col_names
 NSERC_DATA.drop_duplicates(inplace=True)
 NSERC_DATA.dropna(subset=["Total_Amount"], inplace=True)
 
-NSERC_DATA = NSERC_DATA[NSERC_DATA["CompetitionFY"] >= START_YEAR]
+NSERC_DATA = NSERC_DATA[(NSERC_DATA["CompetitionFY"] >= START_YEAR) & (NSERC_DATA["CompetitionFY"] <= END_YEAR)]
 NSERC_DATA['CompetitionFY'] = NSERC_DATA['CompetitionFY'].astype(int)
 
 NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
@@ -216,7 +218,7 @@ SSHRC_DATA.columns = col_names
 SSHRC_DATA.drop_duplicates(inplace=True)
 SSHRC_DATA.dropna(subset=["Total_Amount"], inplace=True)
 
-SSHRC_DATA = SSHRC_DATA[SSHRC_DATA["CompetitionFY"] >= START_YEAR]
+SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["CompetitionFY"] >= START_YEAR) & (SSHRC_DATA["CompetitionFY"] <= END_YEAR)]
 SSHRC_DATA['CompetitionFY'] = SSHRC_DATA['CompetitionFY'].astype(int)
 
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))

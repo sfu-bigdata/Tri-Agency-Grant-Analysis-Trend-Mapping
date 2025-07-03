@@ -64,5 +64,11 @@ if select_agency:
 
 
 st.title("Update Data")
+col1, col2 = st.columns(2)
+with col1:
+    start_year = st.number_input('Select start Year', value=2019, step=1)
+with col2:
+    end_year = st.number_input('Select end year:', value=2023, step=1)
 if st.button("Update Data"):
-    subprocess.run(['python', 'clean_data.py'])
+
+    subprocess.run(['python', 'clean_data.py', str(start_year), str(end_year)])

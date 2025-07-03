@@ -48,6 +48,7 @@ for label in program_labels:
 plt.title(f"Program Trends for {dashboard_type}")
 plt.ylabel("Total Funding Amount")
 plt.xlabel("CompetitionFY")
+plt.xticks(agency_data["CompetitionFY"].unique())
 plt.grid(True)
 plt.legend()
 st.pyplot(fig)
