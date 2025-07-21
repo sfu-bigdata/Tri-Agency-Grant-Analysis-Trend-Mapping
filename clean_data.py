@@ -51,9 +51,9 @@ def embed(texts, batch_size=32):
 ## CIHR DATA
 
 cihr_path = "raw_data/CIHR/"
-cihr_files = Path(cihr_path).glob("*.csv")
+cihr_files = Path(cihr_path).glob("*.xlsx")
 
-CIHR_DFS = [pd.read_csv(f) for f in cihr_files]
+CIHR_DFS = [pd.read_excel(f) for f in cihr_files]
 CIHR_DATA = pd.concat(CIHR_DFS, ignore_index=True)
 
 grant_descriptors = [
@@ -71,7 +71,7 @@ col_names = [
 CIHR_DATA = CIHR_DATA[grant_descriptors]
 CIHR_DATA.columns = col_names
 
-CIHR_DATA.drop_duplicates(inplace=True)
+CIHR_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
 CIHR_DATA.dropna(subset=["Total_Amount"], inplace=True)
 
 CIHR_DATA['CompetitionFY'] = CIHR_DATA['CompetitionFY']//100 # convert to year (ex. 201920 -> 2019)
@@ -124,7 +124,7 @@ CIHR_DATA['Area_of_Research'] = CIHR_DATA['Area_of_Research'].str.capitalize()
 nserc_path = "raw_data/NSERC/"
 nserc_files = Path(nserc_path).glob("*.csv")
 
-NSERC_DFS = [pd.read_csv(f) for f in nserc_files]
+NSERC_DFS = [pd.read_csv(f, encoding = "ISO-8859-1") for f in nserc_files]
 NSERC_DATA = pd.concat(NSERC_DFS, ignore_index=True)
 
 grant_descriptors = [
@@ -142,7 +142,7 @@ col_names = [
 NSERC_DATA = NSERC_DATA[grant_descriptors]
 NSERC_DATA.columns = col_names
 
-NSERC_DATA.drop_duplicates(inplace=True)
+NSERC_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
 NSERC_DATA.dropna(subset=["Total_Amount"], inplace=True)
 
 NSERC_DATA = NSERC_DATA[(NSERC_DATA["CompetitionFY"] >= START_YEAR) & (NSERC_DATA["CompetitionFY"] <= END_YEAR)]
@@ -215,7 +215,7 @@ col_names = [
 SSHRC_DATA = SSHRC_DATA[grant_descriptors]
 SSHRC_DATA.columns = col_names
 
-SSHRC_DATA.drop_duplicates(inplace=True)
+SSHRC_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
 SSHRC_DATA.dropna(subset=["Total_Amount"], inplace=True)
 
 SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["CompetitionFY"] >= START_YEAR) & (SSHRC_DATA["CompetitionFY"] <= END_YEAR)]
