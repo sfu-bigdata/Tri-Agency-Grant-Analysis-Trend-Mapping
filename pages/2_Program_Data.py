@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from millify import millify
 import  io
 
@@ -24,13 +25,13 @@ dashboard_type = st.selectbox("Select Agency:", ["CIHR", "NSERC", "SSHRC"])
 
 if dashboard_type == "CIHR":
     agency_data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "CIHR"].copy()
-    specifc_labels = ["CIHR Fellowship", "Canada Excellence Research Chair", "Project Grant"]
+    specifc_labels = ["Project Grant"]
 elif dashboard_type == "NSERC":
     agency_data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "NSERC"].copy()
-    specifc_labels = ["Discovery Grants Program - Individual", "Alliance Grants", "Canada Research Chairs"]
+    specifc_labels = ["Discovery Grants Program - Individual", "Alliance Grants"]
 elif dashboard_type == "SSHRC":
     agency_data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "SSHRC"].copy()
-    specifc_labels = ["Canada Research Chairs", "Research Support Fund"]
+    specifc_labels = ["Insight Development Grant", "Insight Grants", "Partnership Grants"]
 
 
 st.title(f"Program Trends for {dashboard_type}")
@@ -62,3 +63,33 @@ st.download_button(
     file_name=f"{dashboard_type}_university_funding.png",
     mime="image/png"
 )
+
+st.title(f"Program Funding Heatmap for {dashboard_type}")
+fig, ax = plt.subplots(figsize=(12, 6))
+heatmap_data = agency_data[(agency_data["Program_Name"].isin(program_labels)) & (agency_data['Institution'].isin(["Simon Fraser University"] + U15))].groupby(['Program_Name', 'Institution'])['Total_Amount'].sum().reset_index()
+sns.heatmap(heatmap_data.pivot_table(index='Program_Name', columns='Institution', values='Total_Amount', aggfunc='sum'), cmap="YlGnBu")
+plt.title(f"Heatmap of Program Funding for {dashboard_type}")
+st.pyplot(fig)
+
+st.title(f"Program Market Share for {dashboard_type}")
+
+university = st.selectbox("Select University:", ["Simon Fraser University"] + U15)
+
+fig = plt.figure(figsize=(12, 6))
+for label in program_labels:
+    program_data = agency_data[(agency_data["Program_Name"] == label) & (agency_data['Institution'] == university)]
+    market_share = (program_data.groupby('CompetitionFY')['Total_Amount'].sum() / agency_data[(agency_data["Program_Name"] == label)].groupby('CompetitionFY')['Total_Amount'].sum()).reset_index()
+    print(market_share.reset_index())
+    plt.plot(market_share['CompetitionFY'], market_share['Total_Amount'] * 100, label=label, marker='o')
+
+
+# Set title and labels
+plt.title(f"Program Market Share for {dashboard_type} - {university}")
+plt.xlabel("University")
+plt.ylabel("Market Share (%)")
+
+# Display legend
+plt.legend()
+plt.grid(True)
+plt.legend()
+st.pyplot(fig)
