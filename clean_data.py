@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import numpy as np
 import sys
 import re
 
@@ -59,7 +60,8 @@ CIHR_DATA = pd.concat(CIHR_DFS, ignore_index=True)
 grant_descriptors = [
     "FundingCode_CodeFinancement", "CompetitionFY_AFConcours", #"FundingStartDate_DatePremierVersement", "FundingEndDate_DateDernierVersement", 
     "ResearchInstitutionNameEN_NomEtablissementRechercheAN", "ResearchInstitutionNameFR_NomEtablissementRechercheFR",
-    "TotalAmountAwarded_MontantTotalAccorde","ProgramNameEN_NomProgrammeAN", "ProgramTypeEN_TypeProgrammeAN", 
+    "TotalAmountAwarded_MontantTotalAccorde", # AmountPaidFY_MontantPayeAF is more similar to what NSERC AND SSHRC do
+    "ProgramNameEN_NomProgrammeAN", "ProgramTypeEN_TypeProgrammeAN", 
     "ApplicationTitle_TitreDemande", "PrimaryThemeEN_ThemePrincipalAN", "AllResearchCategoriesEN_TousCategoriesRechercheAN"
 ]
 
@@ -83,6 +85,15 @@ CIHR_DATA.drop(columns=["Institution_FR"], inplace=True)
 
 CIHR_DATA["Institution"] = CIHR_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
 CIHR_DATA["Institution"] = CIHR_DATA["Institution"].astype(str).str.strip()
+
+# Replace University Names
+CIHR_DATA["Institution"] = CIHR_DATA["Institution"].replace(
+    {
+        "Universite Laval" : "Université Laval",
+        "Universite de Montreal" : "Université de Montréal",
+        "Western University" : "University of Western Ontario"
+    }
+)
 
 label_mapping = joblib.load("models/CIHR_MD_label_mapping.pkl")
 
@@ -149,7 +160,12 @@ NSERC_DATA = NSERC_DATA[(NSERC_DATA["CompetitionFY"] >= START_YEAR) & (NSERC_DAT
 NSERC_DATA['CompetitionFY'] = NSERC_DATA['CompetitionFY'].astype(int)
 
 NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
+NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).apply(lambda x: str.removeprefix(x, "The "))
 NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).str.strip()
+
+NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['DISCOVERY RESEARCH**', 'DISCOVERY RESEARCH'], 'Discovery Research')
+NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['RESEARCH PARTNERSHIPS**', 'RESEARCH PARTNERSHIPS'], 'Research Partnerships')
+NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['RESEARCH TRAINING AND TALENT DEVELOPMENT'], 'Research Training and Talent Development')
 
 label_mapping = joblib.load("models/NSERC_MD_label_mapping.pkl")
 
@@ -159,13 +175,9 @@ output_dim = len(label_mapping)
 clf_model = Classifier(input_dim, output_dim).to(device)
 clf_model.load_state_dict(torch.load("models/NSERC_MD.pt"))
 
-NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['DISCOVERY RESEARCH**', 'DISCOVERY RESEARCH'], 'Discovery Research')
-NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['RESEARCH PARTNERSHIPS**', 'RESEARCH PARTNERSHIPS'], 'Research Partnerships')
-NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['RESEARCH TRAINING AND TALENT DEVELOPMENT'], 'Research Training and Talent Development')
-
 NSERC_DATA['Main_Discipline'] = NSERC_DATA['Main_Discipline'].replace(['Not available', 'Advancement of knowledge'], None)
 missing_df = NSERC_DATA[NSERC_DATA['Main_Discipline'].isna()].copy()
-
+print(missing_df["Title"])
 X_missing = embed(missing_df["Title"].tolist())
 with torch.no_grad():
     preds = clf_model(X_missing.to(device)).argmax(dim=1).cpu().numpy()
@@ -192,11 +204,10 @@ with torch.no_grad():
 NSERC_DATA.loc[missing_df.index, "Area_of_Research"] = pred_labels
 
 ## SSHRC DATA
-
 sshrc_path = "raw_data/SSHRC/"
 sshrc_files = Path(sshrc_path).glob("*.csv")
 
-SSHRC_DFS = [pd.read_csv(f) for f in sshrc_files]
+SSHRC_DFS = [pd.read_csv(f, encoding = "ISO-8859-1") for f in sshrc_files]
 SSHRC_DATA = pd.concat(SSHRC_DFS, ignore_index=True)
 
 grant_descriptors = [
@@ -211,17 +222,20 @@ col_names = [
     'Total_Amount', 'Program_Name', 'Title', 'Main_Discipline', 'Area_of_Research'
 ]
 
-
 SSHRC_DATA = SSHRC_DATA[grant_descriptors]
 SSHRC_DATA.columns = col_names
 
 SSHRC_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
 SSHRC_DATA.dropna(subset=["Total_Amount"], inplace=True)
 
+SSHRC_DATA["Total_Amount"] = SSHRC_DATA["Total_Amount"].str.replace(",", "").str.replace("$", "")
+SSHRC_DATA["Total_Amount"] = pd.to_numeric(SSHRC_DATA["Total_Amount"])
+
 SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["CompetitionFY"] >= START_YEAR) & (SSHRC_DATA["CompetitionFY"] <= END_YEAR)]
 SSHRC_DATA['CompetitionFY'] = SSHRC_DATA['CompetitionFY'].astype(int)
 
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
+SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: str.removeprefix(x, "The "))
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).str.strip()
 
 label_mapping = joblib.load("models/SSHRC_MD_label_mapping.pkl")
@@ -232,13 +246,15 @@ output_dim = len(label_mapping)
 clf_model = Classifier(input_dim, output_dim).to(device)
 clf_model.load_state_dict(torch.load("models/SSHRC_MD.pt"))
 
-label_mapping = joblib.load("models/SSHRC_MD_label_mapping.pkl")
+SSHRC_DATA['Main_Discipline'] = SSHRC_DATA['Main_Discipline'].replace(['Not Specified', 'Not specified', np.nan], None)
+missing_df = SSHRC_DATA[SSHRC_DATA['Main_Discipline'].isna()].copy().dropna(subset=["Title"])
 
-input_dim = 384  # MiniLM embedding size
-output_dim = len(label_mapping)
+X_missing = embed(missing_df["Title"].tolist())
+with torch.no_grad():
+    preds = clf_model(X_missing.to(device)).argmax(dim=1).cpu().numpy()
+    pred_labels = [label_mapping[i] for i in preds]
 
-clf_model = Classifier(input_dim, output_dim).to(device)
-clf_model.load_state_dict(torch.load("models/SSHRC_MD.pt"))
+SSHRC_DATA.loc[missing_df.index, "Main_Discipline"] = pred_labels
 
 label_mapping = joblib.load("models/SSHRC_AR_label_mapping.pkl")
 
@@ -248,8 +264,9 @@ output_dim = len(label_mapping)
 clf_model = Classifier(input_dim, output_dim).to(device)
 clf_model.load_state_dict(torch.load("models/SSHRC_AR.pt"))
 
-SSHRC_DATA['Area_of_Research'] = SSHRC_DATA['Area_of_Research'].replace(["Not Specified", "Not specified", "Not Applicable", "Multiple primary fields of research", "Interdisciplinary Studies"], None)
-missing_df = SSHRC_DATA[SSHRC_DATA['Area_of_Research'].isna()].copy()
+SSHRC_DATA['Area_of_Research'] = SSHRC_DATA['Area_of_Research'].replace(
+    ["Not Specified", "Not specified", "Not Applicable", "Multiple primary fields of research", "Interdisciplinary Studies", np.nan], None)
+missing_df = SSHRC_DATA[SSHRC_DATA['Area_of_Research'].isna()].copy().dropna(subset=["Title"])
 
 X_missing = embed(missing_df["Title"].tolist())
 with torch.no_grad():
