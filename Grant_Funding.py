@@ -16,7 +16,7 @@ U15 = ["University of Alberta", "University of British Columbia", "University of
        "University of Victoria"] # U15 + UVic
 
 # Load and clean data
-TRIAGENCY_DATA = pd.read_csv("clean_data/TRIAGENCY_DATA.csv")
+TRIAGENCY_DATA = pd.read_csv("clean_data/TRIAGENCY_DATA.csv", low_memory=False)
 U15_DATA = TRIAGENCY_DATA[TRIAGENCY_DATA["Institution"].isin(U15)]
 SFU_DATA = TRIAGENCY_DATA[TRIAGENCY_DATA["Institution"] == "Simon Fraser University"]
 
@@ -27,13 +27,13 @@ st.title("Grant Funding Dashboard")
 total_funding = st.checkbox("Display Total Funding")
 if total_funding:
     fig = plt.figure(figsize=(12, 6))
-    total_funding = data.copy().groupby('CompetitionFY')['Total_Amount'].sum()
+    total_funding = data.groupby('CompetitionFY')['Total_Amount'].sum()
     plt.plot(total_funding.index, total_funding.values, marker='o', label="Total Funding")
 else:
     agencies_selected = st.multiselect("Select Agencies", ["CIHR", "NSERC", "SSHRC"], ["CIHR", "NSERC", "SSHRC"])
     fig = plt.figure(figsize=(12, 6))
     for agency in agencies_selected:
-        total_funding = data[data["Agency"] == agency].copy().groupby('CompetitionFY')['Total_Amount'].sum()
+        total_funding = data[data["Agency"] == agency].groupby('CompetitionFY')['Total_Amount'].sum()
         plt.plot(total_funding.index, total_funding.values, marker='o', label=f"{agency} Funding")
 
 plt.xlabel("CompetitionFY")
@@ -145,14 +145,20 @@ if select_year_mode == "Single Year":
 
     st.write(f"Total Agency Funding: {millify(data[(data['CompetitionFY'] == year)]['Total_Amount'].sum(), precision=2)}")
 
-    sfu_total_amount = (data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY']== year)]["Total_Amount"].sum())
-    sfu_market_share = ((sfu_total_amount / data[(data['CompetitionFY'] == year)]["Total_Amount"].sum()) * 100)
-    agency_market_share.append({"University": "Simon Fraser University", "Grant Amount": f"{millify(sfu_total_amount, precision=2)}", "Market Share (%)": f"{sfu_market_share:.2f}%"})
+    sfu_total_amount = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY']== year)]["Total_Amount"].sum()
+    sfu_market_share = (sfu_total_amount / data[(data['CompetitionFY'] == year)]["Total_Amount"].sum()) * 100
+    sfu_total_grants = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] == year)]["Total_Amount"].count()
+    sfu_avg_grant = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] == year)]["Total_Amount"].mean() if sfu_total_grants > 0 else 0
+    agency_market_share.append({"University": "Simon Fraser University", "Total Grant Amount": millify(sfu_total_amount, precision=2), 
+                                "Market Share (%)": f"{sfu_market_share:.2f}%", "Num of Grants": sfu_total_grants, "Avg Grant Amount": millify(sfu_avg_grant, precision=2)})
 
     for u15_university in U15:
         total_u15_amount = (data[(data["Institution"] == u15_university) & (data['CompetitionFY'] == year)]["Total_Amount"].sum())
         market_share = ((total_u15_amount / data[(data['CompetitionFY'] == year)]["Total_Amount"].sum()) * 100)
-        agency_market_share.append({"University": u15_university, "Grant Amount": f"{millify(total_u15_amount, precision=2)}", "Market Share (%)": f"{market_share:.2f}%"})
+        total_grants = data[(data["Institution"] == u15_university) & (data['CompetitionFY'] == year)]["Total_Amount"].count()
+        avg_grant = data[(data["Institution"] == u15_university) & (data['CompetitionFY'] == year)]["Total_Amount"].mean() if total_grants > 0 else 0
+        agency_market_share.append({"University": u15_university, "Total Grant Amount": millify(total_u15_amount, precision=2),
+                                    "Market Share (%)": f"{market_share:.2f}%", "Num of Grants": total_grants, "Avg Grant Amount": millify(avg_grant, precision=2)})
     
 
 elif select_year_mode == "Range of Years":
@@ -167,12 +173,18 @@ elif select_year_mode == "Range of Years":
 
     sfu_total_amount = (data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum())
     sfu_market_share = ((sfu_total_amount / data[(data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum()) * 100)
-    agency_market_share.append({"University": "Simon Fraser University", "Grant Amount": f"{millify(sfu_total_amount, precision=2)}", "Market Share (%)": f"{sfu_market_share:.2f}%"})
+    sfu_total_grants = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].count()
+    sfu_avg_grant = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].mean() if sfu_total_grants > 0 else 0
+    agency_market_share.append({"University": "Simon Fraser University", "Total Grant Amount": millify(sfu_total_amount, precision=2), 
+                                "Market Share (%)": f"{sfu_market_share:.2f}%", "Num of Grants": sfu_total_grants, "Avg Grant Amount": millify(sfu_avg_grant, precision=2)})
 
     for u15_university in U15:
         total_u15_amount = (data[(data["Institution"] == u15_university) & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum())
         market_share = ((total_u15_amount / data[(data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].sum()) * 100)
-        agency_market_share.append({"University": u15_university, "Grant Amount": f"{millify(total_u15_amount, precision=2)}", "Market Share (%)": f"{market_share:.2f}%"})
+        total_grants = (data[(data["Institution"] == u15_university) & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].count())
+        avg_grant = data[(data["Institution"] == u15_university) & (data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]["Total_Amount"].mean() if total_grants > 0 else 0
+        agency_market_share.append({"University": u15_university, "Total Grant Amount": millify(total_u15_amount, precision=2),
+                                    "Market Share (%)": f"{market_share:.2f}%", "Num of Grants": total_grants, "Avg Grant Amount": millify(avg_grant, precision=2, drop_nulls=True)})
 
 elif select_year_mode == "Compare Years":
     column1, column2 = st.columns(2)

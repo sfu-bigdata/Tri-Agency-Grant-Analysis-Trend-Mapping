@@ -82,13 +82,13 @@ if select_year_mode == "Single Year":
     data = agency_data[agency_data["CompetitionFY"] == year]
     
     # Main Discipline
-    data = data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
-    discipline_labels = sorted(data[field].unique())
+    discipline_labels = sorted((data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index())[field].unique())
 
     for label in discipline_labels:
         md_label_data = data[data[field] == label]
-        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1)])
-    columns = [field_type, 'Year Amount ($)', 'Market Share (%)']
+        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1),
+                           md_label_data['Total_Amount'].count(), millify(md_label_data['Total_Amount'].mean(), precision=1)])
+    columns = [field_type, 'Total Amount ($)', 'Market Share (%)', 'Number of Awards', 'Avg Award Amount ($)']
 
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10) # should be a faster way to do this
 
@@ -102,13 +102,13 @@ elif select_year_mode == "Range of Years":
     data = agency_data[(agency_data["CompetitionFY"] >= year1) & (agency_data["CompetitionFY"] <= year2)]
 
     # Main Discipline
-    data = data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
-    discipline_labels = sorted(data[field].unique())
+    discipline_labels = sorted((data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index())[field].unique())
 
     for label in discipline_labels:
         md_label_data = data[data[field] == label]
-        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1)])
-    columns = [field_type, 'Year Amount ($)', 'Market Share (%)']
+        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1),
+                           md_label_data['Total_Amount'].count(), millify(md_label_data['Total_Amount'].mean(), precision=1)])
+    columns = [field_type, 'Total Amount ($)', 'Market Share (%)', 'Number of Awards', 'Avg Award Amount ($)']
 
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
 
@@ -142,6 +142,7 @@ elif select_year_mode == "Compare Years":
 
     data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
 
+# Export Charts / Tables
 if select_year_mode == "Compare Years":
     st.write(f"{field_type} Market Share Table")
     

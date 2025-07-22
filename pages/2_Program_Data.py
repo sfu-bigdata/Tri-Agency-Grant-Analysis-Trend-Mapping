@@ -25,7 +25,7 @@ dashboard_type = st.selectbox("Select Agency:", ["CIHR", "NSERC", "SSHRC"])
 
 if dashboard_type == "CIHR":
     agency_data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "CIHR"].copy()
-    specifc_labels = ["Project Grant"]
+    specifc_labels = ["Project Grant"] # Many Operating Grant types
 elif dashboard_type == "NSERC":
     agency_data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "NSERC"].copy()
     specifc_labels = ["Discovery Grants Program - Individual", "Alliance Grants"]
@@ -64,11 +64,11 @@ st.download_button(
     mime="image/png"
 )
 
-st.title(f"Program Funding Heatmap for {dashboard_type}")
+st.title(f"Heatmap of Market Share for {dashboard_type}")
 fig, ax = plt.subplots(figsize=(12, 6))
 heatmap_data = agency_data[(agency_data["Program_Name"].isin(program_labels)) & (agency_data['Institution'].isin(["Simon Fraser University"] + U15))].groupby(['Program_Name', 'Institution'])['Total_Amount'].sum().reset_index()
 sns.heatmap(heatmap_data.pivot_table(index='Program_Name', columns='Institution', values='Total_Amount', aggfunc='sum'), cmap="YlGnBu")
-plt.title(f"Heatmap of Program Funding for {dashboard_type}")
+plt.title(f"Heatmap of Program Market Share for {dashboard_type}")
 st.pyplot(fig)
 
 st.title(f"Program Market Share for {dashboard_type}")
@@ -79,16 +79,14 @@ fig = plt.figure(figsize=(12, 6))
 for label in program_labels:
     program_data = agency_data[(agency_data["Program_Name"] == label) & (agency_data['Institution'] == university)]
     market_share = (program_data.groupby('CompetitionFY')['Total_Amount'].sum() / agency_data[(agency_data["Program_Name"] == label)].groupby('CompetitionFY')['Total_Amount'].sum()).reset_index()
-    print(market_share.reset_index())
     plt.plot(market_share['CompetitionFY'], market_share['Total_Amount'] * 100, label=label, marker='o')
 
 
 # Set title and labels
 plt.title(f"Program Market Share for {dashboard_type} - {university}")
-plt.xlabel("University")
+plt.xlabel("CompetitionFY")
+plt.xticks(agency_data["CompetitionFY"].unique())
 plt.ylabel("Market Share (%)")
-
-# Display legend
 plt.legend()
 plt.grid(True)
 plt.legend()

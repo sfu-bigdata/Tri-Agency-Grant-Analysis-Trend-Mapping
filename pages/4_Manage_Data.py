@@ -10,7 +10,7 @@ st.set_page_config(page_title="Data Management", page_icon="")
 
 st.title("Upload Data")
 
-uploaded_cihr = st.file_uploader("Upload CIHR CSV Data:", type=["csv"])
+uploaded_cihr = st.file_uploader("Upload CIHR CSV Data:", type=["xlsx"])
 if uploaded_cihr is not None:
     if st.button("Upload CIHR Data"):
         with open(f'./raw_data/CIHR/{uploaded_cihr.name}', 'wb') as f:
