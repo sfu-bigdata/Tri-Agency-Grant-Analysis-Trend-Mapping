@@ -36,8 +36,6 @@ elif dashboard_type == "NSERC":
 elif dashboard_type == "SSHRC":
     agency_data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "SSHRC"].copy()
 
-table_data = []
-
 st.title(f"{field_type} Trends for {dashboard_type}")
 
 # discipline_revenue = agency_data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
@@ -76,6 +74,8 @@ st.title(f"{field_type} Market Share")
 
 select_year_mode = st.selectbox("Select year range type:", ["Single Year", "Range of Years", "Compare Years"])
 years_list = agency_data['CompetitionFY'].unique()
+
+table_data = []
 
 if select_year_mode == "Single Year":
     year = st.selectbox("Select Year:", sorted(years_list))
@@ -123,31 +123,40 @@ elif select_year_mode == "Compare Years":
     data_year1 = agency_data[agency_data["CompetitionFY"] == year1]
     data_year2 = agency_data[agency_data["CompetitionFY"] == year2]
 
-    data = agency_data[agency_data["CompetitionFY"] == year2]
+    # data = agency_data[agency_data["CompetitionFY"] == year2]
 
-    # Main Discipline
-    data_year1 = data_year1.groupby(field)['Total_Amount'].sum().reset_index()
-    data_year2 = data_year2.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
-
-    discipline_labels = sorted(data_year2[field].unique())
-
+    discipline_labels = sorted((data_year2.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index())[field].unique())
     for label in discipline_labels:
         data_label_year1 = data_year1[data_year1[field] == label]
         data_label_year2 = data_year2[data_year2[field] == label]
 
-        change = ((data_label_year2["Total_Amount"].sum() - data_label_year1["Total_Amount"].sum()) / data_label_year1["Total_Amount"].sum()) * 100
-        color = "red" if change > 0 else "green"
-        table_data.append([label, millify(data_label_year1['Total_Amount'].sum(), precision=1), millify(data_label_year2['Total_Amount'].sum(), precision=1), change])
-    columns = [field_type, 'Year1 Amount ($)', 'Year2 Amount ($)', 'Change (%)']
+        label_year1_total = data_label_year1['Total_Amount'].sum()
+        label_year2_total = data_label_year2['Total_Amount'].sum()
 
-    data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
+        label_year1_marketshare = label_year1_total/data_year1['Total_Amount'].sum() * 100
+        label_year2_marketshare = label_year2_total/data_year2['Total_Amount'].sum() * 100
+
+        label_year1_num_grants = data_label_year1['Total_Amount'].count()
+        label_year2_num_grants = data_label_year2['Total_Amount'].count()
+
+        label_year1_avg_grant = data_label_year1['Total_Amount'].mean()
+        label_year2_avg_grant = data_label_year2['Total_Amount'].mean()
+
+        table_data.append([label, label_year2_total - label_year1_total, label_year2_marketshare - label_year1_marketshare,
+                           label_year2_num_grants - label_year1_num_grants, label_year2_avg_grant - label_year1_avg_grant])
+    columns = [field_type, 'Change in Amount ($)', 'Change in Market Share (%)', 'Change in Num of Grants', 'Change in Avg Grant Amount ($)']
+
+    # data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
 
 # Export Charts / Tables
 if select_year_mode == "Compare Years":
     st.write(f"{field_type} Market Share Table")
     
     df = pd.DataFrame(table_data, columns=columns)
-    df["Change (%)"] = df["Change (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
+    df["Change in Amount ($)"] = df["Change in Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
+    df["Change in Market Share (%)"] = df["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
+    df["Change in Num of Grants"] = df["Change in Num of Grants"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
+    df["Change in Avg Grant Amount ($)"] = df["Change in Avg Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
 
     st.download_button(

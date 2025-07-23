@@ -202,7 +202,14 @@ elif select_year_mode == "Compare Years":
     sfu_year1_market_share = ((sfu_year1_total / data[(data['CompetitionFY'] == year1)]["Total_Amount"].sum()) * 100)
     sfu_year2_market_share = ((sfu_year2_total / data[(data['CompetitionFY'] == year2)]["Total_Amount"].sum()) * 100)
 
-    agency_market_share.append({"University": "Simon Fraser University", "Change in Grant Amount ($)": sfu_year2_total - sfu_year1_total, "Change in Market Share (%)": sfu_year2_market_share - sfu_year1_market_share})
+    sfu_year1_total_grants = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] == year1)]["Total_Amount"].count()
+    sfu_year2_total_grants = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] == year2)]["Total_Amount"].count()
+
+    sfu_year1_avg_grant = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] == year1)]["Total_Amount"].mean() if sfu_year1_total_grants > 0 else 0
+    sfu_year2_avg_grant = data[(data["Institution"] == "Simon Fraser University") & (data['CompetitionFY'] == year2)]["Total_Amount"].mean() if sfu_year2_total_grants > 0 else 0
+
+    agency_market_share.append({"University": "Simon Fraser University", "Change in Grant Amount ($)": sfu_year2_total - sfu_year1_total, "Change in Market Share (%)": sfu_year2_market_share - sfu_year1_market_share,
+                                "Change in Num of Grants": sfu_year2_total_grants - sfu_year1_total_grants, "Change in Avg Grant Amount ($)": sfu_year2_avg_grant - sfu_year1_avg_grant})
 
     for u15_university in U15:
         u15_year1_total = (data[(data["Institution"] == u15_university) & (data['CompetitionFY']== year1)]["Total_Amount"].sum())
@@ -211,7 +218,14 @@ elif select_year_mode == "Compare Years":
         u15_year1_market_share = ((u15_year1_total / data[(data['CompetitionFY'] == year1)]["Total_Amount"].sum()) * 100)
         u15_year2_market_share = ((u15_year2_total / data[(data['CompetitionFY'] == year2)]["Total_Amount"].sum()) * 100)
 
-        agency_market_share.append({"University": u15_university, "Change in Grant Amount ($)": u15_year2_total - u15_year1_total, "Change in Market Share (%)": u15_year2_market_share - u15_year1_market_share})
+        u15_year1_num_grants = (data[(data["Institution"] == u15_university) & (data['CompetitionFY']== year1)]["Total_Amount"].count())
+        u15_year2_num_grants = (data[(data["Institution"] == u15_university) & (data['CompetitionFY']== year2)]["Total_Amount"].count())
+
+        u15_year1_avg_grant = data[(data["Institution"] == u15_university) & (data['CompetitionFY']== year1)]["Total_Amount"].mean() if u15_year1_num_grants > 0 else 0
+        u15_year2_avg_grant = data[(data["Institution"] == u15_university) & (data['CompetitionFY']== year2)]["Total_Amount"].mean() if u15_year2_num_grants > 0 else 0
+
+        agency_market_share.append({"University": u15_university, "Change in Grant Amount ($)": u15_year2_total - u15_year1_total, "Change in Market Share (%)": u15_year2_market_share - u15_year1_market_share,
+                                    "Change in Num of Grants": u15_year2_num_grants - u15_year1_num_grants, "Change in Avg Grant Amount ($)": u15_year2_avg_grant - u15_year1_avg_grant})
 
 if select_year_mode == "Compare Years":
     # Display the market share list in a table
@@ -219,7 +233,9 @@ if select_year_mode == "Compare Years":
     market_share_table["Change in Grant Amount ($)"] = market_share_table["Change in Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x)}</span>' if x < 0 else f'<span style="color: green;">{millify(x)}</span>')
     # market_share_table["Change in Grant Amount ($)"] = market_share_table["Change in Grant Amount ($)"].apply(lambda x: millify(x))
     market_share_table["Change in Market Share (%)"] = market_share_table["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
-    
+    market_share_table["Change in Num of Grants"] = market_share_table["Change in Num of Grants"].apply(lambda x: f'<span style="color: red;">{x}</span>' if x < 0 else f'<span style="color: green;">{x}</span>')
+    market_share_table["Change in Avg Grant Amount ($)"] = market_share_table["Change in Avg Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x)}</span>' if x < 0 else f'<span style="color: green;">{millify(x)}</span>')
+
     st.markdown(market_share_table.to_html(escape=False), unsafe_allow_html=True)
     
     st.download_button(
