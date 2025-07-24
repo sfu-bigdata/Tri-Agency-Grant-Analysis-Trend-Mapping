@@ -58,27 +58,26 @@ CIHR_DFS = [pd.read_excel(f) for f in cihr_files]
 CIHR_DATA = pd.concat(CIHR_DFS, ignore_index=True)
 
 grant_descriptors = [
-    "FundingCode_CodeFinancement", "CompetitionFY_AFConcours", #"FundingStartDate_DatePremierVersement", "FundingEndDate_DateDernierVersement", 
+    "FundingCode_CodeFinancement", "FiscalYear_AnneeFinanciere", #"FundingStartDate_DatePremierVersement", "FundingEndDate_DateDernierVersement", 
     "ResearchInstitutionNameEN_NomEtablissementRechercheAN", "ResearchInstitutionNameFR_NomEtablissementRechercheFR",
-    "TotalAmountAwarded_MontantTotalAccorde", # AmountPaidFY_MontantPayeAF is more similar to what NSERC AND SSHRC do
-    "ProgramNameEN_NomProgrammeAN", "ProgramTypeEN_TypeProgrammeAN", 
+    "AmountPaidFY_MontantPayeAF", "ProgramNameEN_NomProgrammeAN", "ProgramTypeEN_TypeProgrammeAN", 
     "ApplicationTitle_TitreDemande", "PrimaryThemeEN_ThemePrincipalAN", "AllResearchCategoriesEN_TousCategoriesRechercheAN"
 ]
 
 col_names = [
-    'Unique_ID', 'CompetitionFY', 'Institution', 'Institution_FR',
-    'Total_Amount', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research'
+    'Unique_ID', 'FiscalYear', 'Institution', 'Institution_FR',
+    'AmountPaid', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research'
 ]
 
 CIHR_DATA = CIHR_DATA[grant_descriptors]
 CIHR_DATA.columns = col_names
 
-CIHR_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
-CIHR_DATA.dropna(subset=["Total_Amount"], inplace=True)
+# CIHR_DATA.drop_duplicates(subset=["Unique_ID", "FiscalYear"], inplace=True)
+CIHR_DATA.dropna(subset=["AmountPaid"], inplace=True)
 
-CIHR_DATA['CompetitionFY'] = CIHR_DATA['CompetitionFY']//100 # convert to year (ex. 201920 -> 2019)
-CIHR_DATA = CIHR_DATA[(CIHR_DATA["CompetitionFY"] >= START_YEAR) & (CIHR_DATA["CompetitionFY"] <= END_YEAR)]
-CIHR_DATA['CompetitionFY'] = CIHR_DATA['CompetitionFY'].astype(int)
+CIHR_DATA['FiscalYear'] = CIHR_DATA['FiscalYear']//100 # convert to year (ex. 201920 -> 2019)
+CIHR_DATA = CIHR_DATA[(CIHR_DATA["FiscalYear"] >= START_YEAR) & (CIHR_DATA["FiscalYear"] <= END_YEAR)]
+CIHR_DATA['FiscalYear'] = CIHR_DATA['FiscalYear'].astype(int)
 
 CIHR_DATA['Institution'] = CIHR_DATA['Institution'].fillna(CIHR_DATA['Institution_FR'])
 CIHR_DATA.drop(columns=["Institution_FR"], inplace=True)
@@ -95,6 +94,11 @@ CIHR_DATA["Institution"] = CIHR_DATA["Institution"].replace(
     }
 )
 
+CIHR_DATA["Program_Name"] = CIHR_DATA["Program_Name"].astype(str).apply(
+    lambda x: "Operating Grant" if any(i in x for i in ["Operating Grant", "Operating Gr", "Op Grant", "Op. Grant", "Op Gr", "Op. Gr"]) else x)
+CIHR_DATA["Program_Name"] = CIHR_DATA["Program_Name"].astype(str).apply(
+    lambda x: "Project Grant" if any(i in x for i in ["Project Grant"]) else x)
+
 label_mapping = joblib.load("models/CIHR_MD_label_mapping.pkl")
 
 input_dim = 384  # MiniLM embedding size
@@ -103,7 +107,6 @@ output_dim = len(label_mapping)
 clf_model = Classifier(input_dim, output_dim).to(device)
 clf_model.load_state_dict(torch.load("models/CIHR_MD.pt"))
 
-# missing_df = CIHR_DATA[CIHR_DATA["Main_Discipline"].isna() | CIHR_DATA["Main_Discipline"] == "Not applicable/Specified"].copy()
 CIHR_DATA['Main_Discipline'] = CIHR_DATA['Main_Discipline'].replace(['Not applicable/Specified', 'Not Applicable', ''], None)
 missing_df = CIHR_DATA[CIHR_DATA['Main_Discipline'].isna()].copy()
 
@@ -138,26 +141,27 @@ nserc_files = Path(nserc_path).glob("*.csv")
 NSERC_DFS = [pd.read_csv(f, encoding = "ISO-8859-1") for f in nserc_files]
 NSERC_DATA = pd.concat(NSERC_DFS, ignore_index=True)
 
+
 grant_descriptors = [
-    "ApplicationID", "CompetitionYear-Année de concours",
+    "ApplicationID", "FiscalYear-Exercice financier",
     "Institution-Établissement",
     "AwardAmount", "ProgramNameEN", "GroupEN",
     "ApplicationTitle", "AreaOfApplicationGroupEN", "ResearchSubjectGroupEN"
 ]
 
 col_names = [
-    'Unique_ID', 'CompetitionFY', 'Institution', 
-    'Total_Amount', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research'
+    'Unique_ID', 'FiscalYear', 'Institution', 
+    'AmountPaid', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research'
 ]
 
 NSERC_DATA = NSERC_DATA[grant_descriptors]
 NSERC_DATA.columns = col_names
 
-NSERC_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
-NSERC_DATA.dropna(subset=["Total_Amount"], inplace=True)
+# NSERC_DATA.drop_duplicates(subset=["Unique_ID", "FiscalYear"], inplace=True)
+NSERC_DATA.dropna(subset=["AmountPaid"], inplace=True)
 
-NSERC_DATA = NSERC_DATA[(NSERC_DATA["CompetitionFY"] >= START_YEAR) & (NSERC_DATA["CompetitionFY"] <= END_YEAR)]
-NSERC_DATA['CompetitionFY'] = NSERC_DATA['CompetitionFY'].astype(int)
+NSERC_DATA = NSERC_DATA[(NSERC_DATA["FiscalYear"] >= START_YEAR) & (NSERC_DATA["FiscalYear"] <= END_YEAR)]
+NSERC_DATA['FiscalYear'] = NSERC_DATA['FiscalYear'].astype(int)
 
 NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
 NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).apply(lambda x: str.removeprefix(x, "The "))
@@ -177,7 +181,6 @@ clf_model.load_state_dict(torch.load("models/NSERC_MD.pt"))
 
 NSERC_DATA['Main_Discipline'] = NSERC_DATA['Main_Discipline'].replace(['Not available', 'Advancement of knowledge'], None)
 missing_df = NSERC_DATA[NSERC_DATA['Main_Discipline'].isna()].copy()
-print(missing_df["Title"])
 X_missing = embed(missing_df["Title"].tolist())
 with torch.no_grad():
     preds = clf_model(X_missing.to(device)).argmax(dim=1).cpu().numpy()
@@ -210,29 +213,33 @@ sshrc_files = Path(sshrc_path).glob("*.csv")
 SSHRC_DFS = [pd.read_csv(f, encoding = "ISO-8859-1") for f in sshrc_files]
 SSHRC_DATA = pd.concat(SSHRC_DFS, ignore_index=True)
 
+# print(SSHRC_DATA["Fiscal_Year-Exercice_financier"].unique())
+
 grant_descriptors = [
-    "cle", "Competition_Year-Année_du_concours",
+    "cle", "Fiscal_Year-Exercice_financier",
     "Institution",
     "Amount-Montant", "Program",
     "Title-Titre", "Area_of_Research", "Main_Discipline"
 ]
 
 col_names = [
-    'Unique_ID', 'CompetitionFY', 'Institution',
-    'Total_Amount', 'Program_Name', 'Title', 'Main_Discipline', 'Area_of_Research'
+    'Unique_ID', 'FiscalYear', 'Institution',
+    'AmountPaid', 'Program_Name', 'Title', 'Main_Discipline', 'Area_of_Research'
 ]
 
 SSHRC_DATA = SSHRC_DATA[grant_descriptors]
 SSHRC_DATA.columns = col_names
 
-SSHRC_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
-SSHRC_DATA.dropna(subset=["Total_Amount"], inplace=True)
+# SSHRC_DATA.drop_duplicates(subset=["Unique_ID", "FiscalYear"], inplace=True)
+SSHRC_DATA.dropna(subset=["AmountPaid"], inplace=True)
 
-SSHRC_DATA["Total_Amount"] = SSHRC_DATA["Total_Amount"].str.replace(",", "").str.replace("$", "")
-SSHRC_DATA["Total_Amount"] = pd.to_numeric(SSHRC_DATA["Total_Amount"])
+print(SSHRC_DATA[SSHRC_DATA["FiscalYear"] >= 2021]["AmountPaid"].sum())
 
-SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["CompetitionFY"] >= START_YEAR) & (SSHRC_DATA["CompetitionFY"] <= END_YEAR)]
-SSHRC_DATA['CompetitionFY'] = SSHRC_DATA['CompetitionFY'].astype(int)
+SSHRC_DATA["AmountPaid"] = SSHRC_DATA["AmountPaid"].str.replace(",", "").str.replace("$", "")
+SSHRC_DATA["AmountPaid"] = pd.to_numeric(SSHRC_DATA["AmountPaid"])
+
+SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["FiscalYear"] >= START_YEAR) & (SSHRC_DATA["FiscalYear"] <= END_YEAR)]
+SSHRC_DATA['FiscalYear'] = SSHRC_DATA['FiscalYear'].astype(int)
 
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: str.removeprefix(x, "The "))

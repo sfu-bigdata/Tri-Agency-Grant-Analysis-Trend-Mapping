@@ -26,18 +26,18 @@ st.title("Grant Funding Dashboard")
 total_funding = st.checkbox("Display Total Funding") 
 if total_funding: # Total Funding of All Agencies Combined
     fig = plt.figure(figsize=(12, 6))
-    total_funding = data.groupby('CompetitionFY')['Total_Amount'].sum()
+    total_funding = data.groupby('FiscalYear')['AmountPaid'].sum()
     plt.plot(total_funding.index, total_funding.values, marker='o', label="Total Funding")
 
 else: # Total Funding of Each Agency
     agencies_selected = st.multiselect("Select Agencies", ["CIHR", "NSERC", "SSHRC"], ["CIHR", "NSERC", "SSHRC"])
     fig = plt.figure(figsize=(12, 6))
     for agency in agencies_selected:
-        total_funding = data[data["Agency"] == agency].groupby('CompetitionFY')['Total_Amount'].sum()
+        total_funding = data[data["Agency"] == agency].groupby('FiscalYear')['AmountPaid'].sum()
         plt.plot(total_funding.index, total_funding.values, marker='o', label=f"{agency} Funding")
 
-plt.xlabel("CompetitionFY")
-plt.xticks(data["CompetitionFY"].unique())
+plt.xlabel("FiscalYear")
+plt.xticks(data["FiscalYear"].unique())
 plt.ylabel("Funding Amount")
 plt.title("Total Agency Funding Over Time")
 plt.legend()
@@ -81,35 +81,35 @@ if specific_u15: # Select specific U15 Universities
     u15_selected = st.multiselect("Select Universities", ["Simon Fraser University"] + U15)
 
     if display_market: # Display Market Share (%)
-        years = sorted(data["CompetitionFY"].unique())
+        years = sorted(data["FiscalYear"].unique())
         for u15_uni in u15_selected:
             u15_funding = []
             for year in years:
-                year_data = data[data["CompetitionFY"] == year]
-                u15_funding.append((year_data[year_data["Institution"] == u15_uni]["Total_Amount"].sum() / year_data["Total_Amount"].sum()) * 100)
+                year_data = data[data["FiscalYear"] == year]
+                u15_funding.append((year_data[year_data["Institution"] == u15_uni]["AmountPaid"].sum() / year_data["AmountPaid"].sum()) * 100)
             plt.plot(years, u15_funding, label=u15_uni, marker='o')
     
     else: # Display Funding Amount ($)
         for u15_uni in u15_selected:
-            u15_by_year = (data[data["Institution"] == u15_uni].groupby('CompetitionFY')['Total_Amount'].sum())
+            u15_by_year = (data[data["Institution"] == u15_uni].groupby('FiscalYear')['AmountPaid'].sum())
             plt.plot(u15_by_year.index, u15_by_year.values, label=u15_uni, marker='o')
     
 else: # Display SFU and all U15 + UVic
     if display_market: # Display Market Share (%)
-        years = sorted(data["CompetitionFY"].unique())
+        years = sorted(data["FiscalYear"].unique())
         sfu_funding = []
         u15_mean_funding = []
 
         for year in years:
-            year_data = data[data["CompetitionFY"] == year]
-            sfu_funding.append((year_data[year_data["Institution"] == "Simon Fraser University"]["Total_Amount"].sum() / year_data["Total_Amount"].sum()) * 100)
-            u15_mean_funding.append(((year_data[year_data["Institution"].isin(U15)]["Total_Amount"].sum() / len(U15)) / year_data["Total_Amount"].sum()) * 100)
+            year_data = data[data["FiscalYear"] == year]
+            sfu_funding.append((year_data[year_data["Institution"] == "Simon Fraser University"]["AmountPaid"].sum() / year_data["AmountPaid"].sum()) * 100)
+            u15_mean_funding.append(((year_data[year_data["Institution"].isin(U15)]["AmountPaid"].sum() / len(U15)) / year_data["AmountPaid"].sum()) * 100)
         plt.plot(years, sfu_funding, label='SFU', marker='o')
         plt.plot(years, u15_mean_funding, label="U15 Mean", marker='o')
 
     else: # Display Funding Amount ($)
-        sfu_by_year = data[data["Institution"] == "Simon Fraser University"].groupby('CompetitionFY')['Total_Amount'].sum()
-        u15_by_year = (data[data["Institution"].isin(U15)].groupby('CompetitionFY')['Total_Amount'].sum()/len(U15))
+        sfu_by_year = data[data["Institution"] == "Simon Fraser University"].groupby('FiscalYear')['AmountPaid'].sum()
+        u15_by_year = (data[data["Institution"].isin(U15)].groupby('FiscalYear')['AmountPaid'].sum()/len(U15))
         plt.plot(sfu_by_year.index, sfu_by_year.values, label='SFU', marker='o')
         plt.plot(u15_by_year.index, u15_by_year.values, label="U15 Mean", marker='o')
 
@@ -121,8 +121,8 @@ if display_market:
 else:
     plt.title("University Funding Over Time")
     plt.ylabel("Funding Amount")
-plt.xlabel("CompetitionFY")
-plt.xticks(data["CompetitionFY"].unique())
+plt.xlabel("FiscalYear")
+plt.xticks(data["FiscalYear"].unique())
 plt.legend()
 plt.grid(True)
 st.pyplot(fig)
@@ -144,10 +144,10 @@ st.title("Table Dashboard")
 # Helper Function to compute Single Year & Range of Years Funding
 def compute_years(data, institutions, year1, year2):
     """Computes funding data for a given range of years and institutions."""
-    total_amount = data[(data["Institution"].isin(institutions)) & (data['CompetitionFY'] >= year1) & (data['CompetitionFY'] <= year2)]["Total_Amount"].sum() / len(institutions)
-    total_market_share = (total_amount / data[(data['CompetitionFY'] >= year1) & (data['CompetitionFY'] <= year2)]["Total_Amount"].sum()) * 100
-    total_grants = data[(data["Institution"].isin(institutions)) & (data['CompetitionFY'] >= year1) & (data['CompetitionFY'] <= year2)]["Total_Amount"].count() / len(institutions)
-    avg_grant = data[(data["Institution"].isin(institutions)) & (data['CompetitionFY'] >= year1) & (data['CompetitionFY'] <= year2)]["Total_Amount"].mean() if total_grants > 0 else 0
+    total_amount = data[(data["Institution"].isin(institutions)) & (data['FiscalYear'] >= year1) & (data['FiscalYear'] <= year2)]["AmountPaid"].sum() / len(institutions)
+    total_market_share = (total_amount / data[(data['FiscalYear'] >= year1) & (data['FiscalYear'] <= year2)]["AmountPaid"].sum()) * 100
+    total_grants = data[(data["Institution"].isin(institutions)) & (data['FiscalYear'] >= year1) & (data['FiscalYear'] <= year2)]["AmountPaid"].count() / len(institutions)
+    avg_grant = data[(data["Institution"].isin(institutions)) & (data['FiscalYear'] >= year1) & (data['FiscalYear'] <= year2)]["AmountPaid"].mean() if total_grants > 0 else 0
 
     return total_amount, total_market_share, total_grants, avg_grant
 
@@ -155,27 +155,30 @@ def compute_years(data, institutions, year1, year2):
 def compare_years(data, institutions, year1, year2):
     """ Compares the grant funding data for a specific institution between two years. """
 
-    year1_data = data[(data["Institution"].isin(institutions)) & (data['CompetitionFY'] == year1)] / len(institutions)
-    year2_data = data[(data["Institution"].isin(institutions)) & (data['CompetitionFY'] == year2)] / len(institutions)
+    year1_data = data[(data["Institution"].isin(institutions)) & (data['FiscalYear'] == year1)]
+    year2_data = data[(data["Institution"].isin(institutions)) & (data['FiscalYear'] == year2)]
 
-    year1_marketshare = ((year1_data["Total_Amount"].sum() / data[(data['CompetitionFY'] == year1)]["Total_Amount"].sum()) * 100)
-    year2_marketshare = ((year2_data["Total_Amount"].sum() / data[(data['CompetitionFY'] == year2)]["Total_Amount"].sum()) * 100)
+    year1_total_amount = year1_data["AmountPaid"].sum() / len(institutions)
+    year2_total_amount = year2_data["AmountPaid"].sum() / len(institutions)
 
-    year1_total_grants = year1_data["Total_Amount"].count() / len(institutions)
-    year2_total_grants = year2_data["Total_Amount"].count() / len(institutions)
+    year1_marketshare = ((year1_total_amount / data[(data['FiscalYear'] == year1)]["AmountPaid"].sum()) * 100)
+    year2_marketshare = ((year2_total_amount / data[(data['FiscalYear'] == year2)]["AmountPaid"].sum()) * 100)
 
-    year1_avg_grant = year1_data["Total_Amount"].mean() if year1_total_grants > 0 else 0
-    year2_avg_grant = year2_data["Total_Amount"].mean() if year2_total_grants > 0 else 0
+    year1_total_grants = year1_data["AmountPaid"].count() / len(institutions)
+    year2_total_grants = year2_data["AmountPaid"].count() / len(institutions)
 
-    return year2_data - year1_data, year2_marketshare - year1_marketshare, year2_total_grants - year1_total_grants, year2_avg_grant - year1_avg_grant
+    year1_avg_grant = year1_data["AmountPaid"].mean() if year1_total_grants > 0 else 0
+    year2_avg_grant = year2_data["AmountPaid"].mean() if year2_total_grants > 0 else 0
+
+    return year2_total_amount - year1_total_amount, year2_marketshare - year1_marketshare, year2_total_grants - year1_total_grants, year2_avg_grant - year1_avg_grant
     
 agency_market_share = []
 # Select one of 3 analysis options
 select_year_mode = st.selectbox("Select year range type:", ["Single Year", "Range of Years", "Compare Years"])
 if select_year_mode == "Single Year": 
-    year = st.selectbox("Select Year:", sorted(data['CompetitionFY'].unique()))
+    year = st.selectbox("Select Year:", sorted(data['FiscalYear'].unique()))
 
-    st.write(f"Total Agency Funding: {millify(data[(data['CompetitionFY'] == year)]['Total_Amount'].sum(), precision=2)}")
+    st.write(f"Total Agency Funding: {millify(data[(data['FiscalYear'] == year)]['AmountPaid'].sum(), precision=2)}")
 
     # Compute U15 mean funding data
     u15_mean_total_amount, u15_mean_market_share, u15_mean_total_grants, u15_mean_avg_grant = compute_years(data, U15, year, year)
@@ -198,11 +201,11 @@ elif select_year_mode == "Range of Years":
     column1, column2 = st.columns(2)
     # Select range of years
     with column1:
-        from_year = st.selectbox("Select From Year:", sorted(data['CompetitionFY'].unique()))
+        from_year = st.selectbox("Select From Year:", sorted(data['FiscalYear'].unique()))
     with column2:
-        to_year = st.selectbox("Select To Year:", sorted(data['CompetitionFY'].unique(), reverse=True))
+        to_year = st.selectbox("Select To Year:", sorted(data['FiscalYear'].unique(), reverse=True))
 
-    st.write(f"Total Agency Funding: {millify(data[(data['CompetitionFY'] >= from_year) & (data['CompetitionFY'] <= to_year)]['Total_Amount'].sum(), precision=2)}")
+    st.write(f"Total Agency Funding: {millify(data[(data['FiscalYear'] >= from_year) & (data['FiscalYear'] <= to_year)]['AmountPaid'].sum(), precision=2)}")
 
     # Compute U15 mean funding data
     u15_mean_total_amount, u15_mean_market_share, u15_mean_total_grants, u15_mean_avg_grant = compute_years(data, U15, from_year, to_year)
@@ -224,11 +227,11 @@ elif select_year_mode == "Compare Years":
     column1, column2 = st.columns(2)
 
     with column1:
-        year1 = st.selectbox("Select Year 1:", sorted(data['CompetitionFY'].unique()))
+        year1 = st.selectbox("Select Year 1:", sorted(data['FiscalYear'].unique()))
     with column2:
-        year2 = st.selectbox("Select Year 2:", sorted(data['CompetitionFY'].unique()))
+        year2 = st.selectbox("Select Year 2:", sorted(data['FiscalYear'].unique()))
 
-    st.write(f"Difference in Agency Funding: {millify(data[(data['CompetitionFY'] == year2)]['Total_Amount'].sum() - data[(data['CompetitionFY'] == year1)]['Total_Amount'].sum(), precision=2)}")
+    st.write(f"Difference in Agency Funding: {millify(data[(data['FiscalYear'] == year2)]['AmountPaid'].sum() - data[(data['FiscalYear'] == year1)]['AmountPaid'].sum(), precision=2)}")
     
     # Computer U15 mean funding data
     u15_mean_change_amount, u15_mean_change_market_share, u15_mean_change_total_grants, u15_mean_change_avg_grant = compare_years(data, U15, year1, year2)
@@ -236,13 +239,13 @@ elif select_year_mode == "Compare Years":
                                 "Change in Num of Grants": u15_mean_change_total_grants, "Change in Avg Grant Amount ($)": u15_mean_change_avg_grant})
 
     # Compute SFU funding data
-    sfu_change_amount, sfu_change_market_share, sfu_change_total_grants, sfu_change_avg_grant = compare_years(data, "Simon Fraser University", year1, year2)
+    sfu_change_amount, sfu_change_market_share, sfu_change_total_grants, sfu_change_avg_grant = compare_years(data, ["Simon Fraser University"], year1, year2)
     agency_market_share.append({"University": "Simon Fraser University", "Change in Grant Amount ($)": sfu_change_amount, "Change in Market Share (%)": sfu_change_market_share,
                                 "Change in Num of Grants": sfu_change_total_grants, "Change in Avg Grant Amount ($)": sfu_change_avg_grant})
     
     # Compute each U15 funding data
     for u15_university in U15:
-        u15_change_amount, u15_change_market_share, u15_change_total_grants, u15_change_avg_grant = compare_years(data, u15_university, year1, year2)
+        u15_change_amount, u15_change_market_share, u15_change_total_grants, u15_change_avg_grant = compare_years(data, [u15_university], year1, year2)
         agency_market_share.append({"University": u15_university, "Change in Grant Amount ($)": u15_change_amount, "Change in Market Share (%)": u15_change_market_share,
                                     "Change in Num of Grants": u15_change_total_grants, "Change in Avg Grant Amount ($)": u15_change_avg_grant})
 

@@ -39,21 +39,21 @@ st.title(f"{field_type} Trends for {dashboard_type}")
 
 custom_labels = st.checkbox("Use custom labels")
 if custom_labels: # Use Specific Disciplines
-    discipline_revenue = agency_data.groupby(field)['Total_Amount'].sum()
+    discipline_revenue = agency_data.groupby(field)['AmountPaid'].sum()
     discipline_labels = st.multiselect('Select disciplines', sorted(discipline_revenue.reset_index()[field].unique()), default=discipline_revenue.nlargest(10).reset_index()[field])
 
 else: # Use Top 10 Disciplines by Revenue
-    discipline_revenue = agency_data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index()
+    discipline_revenue = agency_data.groupby(field)['AmountPaid'].sum().nlargest(10).reset_index()
     discipline_labels = sorted(discipline_revenue[field].unique())
 
 fig = plt.figure(figsize=(12, 6))
 for label in discipline_labels: # plot each discipline
-    grouped_label = agency_data[agency_data[field] == label].groupby('CompetitionFY')['Total_Amount'].sum().reset_index()
-    plt.plot(grouped_label['CompetitionFY'], grouped_label['Total_Amount'], label=label, marker='o')
+    grouped_label = agency_data[agency_data[field] == label].groupby('FiscalYear')['AmountPaid'].sum().reset_index()
+    plt.plot(grouped_label['FiscalYear'], grouped_label['AmountPaid'], label=label, marker='o')
 plt.title(f"{field_type} Trends for {dashboard_type}")
 plt.ylabel("Total Funding Amount")
-plt.xlabel("CompetitionFY")
-plt.xticks(agency_data["CompetitionFY"].unique())
+plt.xlabel("FiscalYear")
+plt.xticks(agency_data["FiscalYear"].unique())
 plt.grid(True)
 plt.legend()
 st.pyplot(fig)
@@ -73,26 +73,26 @@ st.download_button(
 st.title(f"{field_type} Market Share")
 
 table_data = []
-years_list = agency_data['CompetitionFY'].unique()
+years_list = agency_data['FiscalYear'].unique()
 
 # Select Year Mode
 select_year_mode = st.selectbox("Select year range type:", ["Single Year", "Range of Years", "Compare Years"])
 if select_year_mode == "Single Year":
     year = st.selectbox("Select Year:", sorted(years_list))
-    data = agency_data[agency_data["CompetitionFY"] == year]
+    data = agency_data[agency_data["FiscalYear"] == year]
     
     # Select Top 10 Disciplines by Revenue
-    discipline_labels = sorted((data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index())[field].unique())
+    discipline_labels = sorted((data.groupby(field)['AmountPaid'].sum().nlargest(10).reset_index())[field].unique())
 
     # Compute Table Data for each Discipline
     for label in discipline_labels:
         md_label_data = data[data[field] == label]
-        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1),
-                           md_label_data['Total_Amount'].count(), millify(md_label_data['Total_Amount'].mean(), precision=1)])
+        table_data.append([label, millify(md_label_data['AmountPaid'].sum(), precision=1), millify(md_label_data['AmountPaid'].sum()/data['AmountPaid'].sum()*100, precision=1),
+                           md_label_data['AmountPaid'].count(), millify(md_label_data['AmountPaid'].mean(), precision=1)])
     columns = [field_type, 'Total Amount ($)', 'Market Share (%)', 'Number of Awards', 'Avg Award Amount ($)']
 
     # Pie Chart Data
-    data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
+    data = data.groupby(field)['AmountPaid'].sum().nlargest(10)
 
 elif select_year_mode == "Range of Years":
     column1, column2 = st.columns(2)
@@ -101,20 +101,20 @@ elif select_year_mode == "Range of Years":
         year1 = st.selectbox("Select Year1:", sorted(years_list))
     with column2:
         year2 = st.selectbox("Select Year2:", sorted(years_list))
-    data = agency_data[(agency_data["CompetitionFY"] >= year1) & (agency_data["CompetitionFY"] <= year2)]
+    data = agency_data[(agency_data["FiscalYear"] >= year1) & (agency_data["FiscalYear"] <= year2)]
 
     # Select Top 10 Disciplines by Revenue
-    discipline_labels = sorted((data.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index())[field].unique())
+    discipline_labels = sorted((data.groupby(field)['AmountPaid'].sum().nlargest(10).reset_index())[field].unique())
 
     # Compute Table Data for each Discipline
     for label in discipline_labels:
         md_label_data = data[data[field] == label]
-        table_data.append([label, millify(md_label_data['Total_Amount'].sum(), precision=1), millify(md_label_data['Total_Amount'].sum()/data['Total_Amount'].sum()*100, precision=1),
-                           md_label_data['Total_Amount'].count(), millify(md_label_data['Total_Amount'].mean(), precision=1)])
+        table_data.append([label, millify(md_label_data['AmountPaid'].sum(), precision=1), millify(md_label_data['AmountPaid'].sum()/data['AmountPaid'].sum()*100, precision=1),
+                           md_label_data['AmountPaid'].count(), millify(md_label_data['AmountPaid'].mean(), precision=1)])
     columns = [field_type, 'Total Amount ($)', 'Market Share (%)', 'Number of Awards', 'Avg Award Amount ($)']
 
     # Pie Chart Data
-    data = data.groupby(field)['Total_Amount'].sum().nlargest(10)
+    data = data.groupby(field)['AmountPaid'].sum().nlargest(10)
 
 elif select_year_mode == "Compare Years":
     column1, column2 = st.columns(2)
@@ -124,28 +124,28 @@ elif select_year_mode == "Compare Years":
     with column2:
         year2 = st.selectbox("Select Year2:", sorted(years_list))
 
-    data_year1 = agency_data[agency_data["CompetitionFY"] == year1]
-    data_year2 = agency_data[agency_data["CompetitionFY"] == year2]
+    data_year1 = agency_data[agency_data["FiscalYear"] == year1]
+    data_year2 = agency_data[agency_data["FiscalYear"] == year2]
 
     # Select Top 10 Disciplines by Revenue
-    discipline_labels = sorted((data_year2.groupby(field)['Total_Amount'].sum().nlargest(10).reset_index())[field].unique())
+    discipline_labels = sorted((data_year2.groupby(field)['AmountPaid'].sum().nlargest(10).reset_index())[field].unique())
 
     # Compute Table Data for each Discipline
     for label in discipline_labels:
         data_label_year1 = data_year1[data_year1[field] == label]
         data_label_year2 = data_year2[data_year2[field] == label]
 
-        label_year1_total = data_label_year1['Total_Amount'].sum()
-        label_year2_total = data_label_year2['Total_Amount'].sum()
+        label_year1_total = data_label_year1['AmountPaid'].sum()
+        label_year2_total = data_label_year2['AmountPaid'].sum()
 
-        label_year1_marketshare = label_year1_total/data_year1['Total_Amount'].sum() * 100
-        label_year2_marketshare = label_year2_total/data_year2['Total_Amount'].sum() * 100
+        label_year1_marketshare = label_year1_total/data_year1['AmountPaid'].sum() * 100
+        label_year2_marketshare = label_year2_total/data_year2['AmountPaid'].sum() * 100
 
-        label_year1_num_grants = data_label_year1['Total_Amount'].count()
-        label_year2_num_grants = data_label_year2['Total_Amount'].count()
+        label_year1_num_grants = data_label_year1['AmountPaid'].count()
+        label_year2_num_grants = data_label_year2['AmountPaid'].count()
 
-        label_year1_avg_grant = data_label_year1['Total_Amount'].mean()
-        label_year2_avg_grant = data_label_year2['Total_Amount'].mean()
+        label_year1_avg_grant = data_label_year1['AmountPaid'].mean()
+        label_year2_avg_grant = data_label_year2['AmountPaid'].mean()
 
         table_data.append([label, label_year2_total - label_year1_total, label_year2_marketshare - label_year1_marketshare,
                            label_year2_num_grants - label_year1_num_grants, label_year2_avg_grant - label_year1_avg_grant])
@@ -211,18 +211,18 @@ selected_university = st.selectbox("Select University:", ["Simon Fraser Universi
 university_data = agency_data[agency_data['Institution'] == selected_university]
 
 # Main Discipline
-discipline_revenue = university_data.groupby(field)['Total_Amount'].sum()
+discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
 discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])
 
 fig = plt.figure(figsize=(12, 6))
 # Plot Each Discipline data for given University
 for label in discipline_labels:
-    grouped_label = university_data[university_data[field] == label].groupby('CompetitionFY')['Total_Amount'].sum().reset_index()
-    plt.plot(grouped_label['CompetitionFY'], grouped_label['Total_Amount'], label=label, marker='o')
+    grouped_label = university_data[university_data[field] == label].groupby('FiscalYear')['AmountPaid'].sum().reset_index()
+    plt.plot(grouped_label['FiscalYear'], grouped_label['AmountPaid'], label=label, marker='o')
 plt.title(f"Disciplinary Funding for {selected_university}")
 plt.ylabel("Total Funding Amount")
-plt.xlabel("CompetitionFY")
-plt.xticks(university_data["CompetitionFY"].unique())
+plt.xlabel("FiscalYear")
+plt.xticks(university_data["FiscalYear"].unique())
 plt.grid(True)
 plt.legend()
 st.pyplot(fig)
