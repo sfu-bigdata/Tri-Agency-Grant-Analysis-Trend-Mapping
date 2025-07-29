@@ -157,7 +157,7 @@ col_names = [
 NSERC_DATA = NSERC_DATA[grant_descriptors]
 NSERC_DATA.columns = col_names
 
-# NSERC_DATA.drop_duplicates(subset=["Unique_ID", "FiscalYear"], inplace=True)
+# NSERC_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
 NSERC_DATA.dropna(subset=["AmountPaid"], inplace=True)
 
 NSERC_DATA = NSERC_DATA[(NSERC_DATA["FiscalYear"] >= START_YEAR) & (NSERC_DATA["FiscalYear"] <= END_YEAR)]
@@ -233,9 +233,7 @@ SSHRC_DATA.columns = col_names
 # SSHRC_DATA.drop_duplicates(subset=["Unique_ID", "FiscalYear"], inplace=True)
 SSHRC_DATA.dropna(subset=["AmountPaid"], inplace=True)
 
-print(SSHRC_DATA[SSHRC_DATA["FiscalYear"] >= 2021]["AmountPaid"].sum())
-
-SSHRC_DATA["AmountPaid"] = SSHRC_DATA["AmountPaid"].str.replace(",", "").str.replace("$", "")
+SSHRC_DATA["AmountPaid"] = SSHRC_DATA["AmountPaid"].astype(str).str.replace(",", "", regex=False).str.replace("$", "", regex=False).str.strip()
 SSHRC_DATA["AmountPaid"] = pd.to_numeric(SSHRC_DATA["AmountPaid"])
 
 SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["FiscalYear"] >= START_YEAR) & (SSHRC_DATA["FiscalYear"] <= END_YEAR)]
@@ -253,7 +251,7 @@ output_dim = len(label_mapping)
 clf_model = Classifier(input_dim, output_dim).to(device)
 clf_model.load_state_dict(torch.load("models/SSHRC_MD.pt"))
 
-SSHRC_DATA['Main_Discipline'] = SSHRC_DATA['Main_Discipline'].replace(['Not Specified', 'Not specified', np.nan], None)
+SSHRC_DATA['Main_Discipline'] = SSHRC_DATA['Main_Discipline'].replace(['Not Specified', 'Not specified', 'Not Subject to Research Classification', np.nan], None)
 missing_df = SSHRC_DATA[SSHRC_DATA['Main_Discipline'].isna()].copy().dropna(subset=["Title"])
 
 X_missing = embed(missing_df["Title"].tolist())
