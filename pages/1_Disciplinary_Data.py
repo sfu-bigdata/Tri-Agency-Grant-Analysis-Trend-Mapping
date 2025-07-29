@@ -207,18 +207,31 @@ else:
         )
 
 # Select University
-selected_university = st.selectbox("Select University:", ["Simon Fraser University"] + U15)
-university_data = agency_data[agency_data['Institution'] == selected_university]
+selected_university = st.selectbox("Select University:", ["U15 (+UVic) Mean"] + ["Simon Fraser University"] + U15)
+if selected_university == "U15 (+UVic) Mean":
+    university_data = agency_data[agency_data['Institution'].isin(U15)]
 
-# Main Discipline
-discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
-discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])
+    # Main Discipline
+    discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
+    discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])    
 
-fig = plt.figure(figsize=(12, 6))
-# Plot Each Discipline data for given University
-for label in discipline_labels:
-    grouped_label = university_data[university_data[field] == label].groupby('FiscalYear')['AmountPaid'].sum().reset_index()
-    plt.plot(grouped_label['FiscalYear'], grouped_label['AmountPaid'], label=label, marker='o')
+    fig = plt.figure(figsize=(12, 6))
+    for label in discipline_labels:
+        grouped_label = university_data[university_data[field] == label].groupby('FiscalYear')['AmountPaid'].sum().reset_index()
+        plt.plot(grouped_label['FiscalYear'], grouped_label['AmountPaid'] / len(U15), label=label, marker='o')
+
+else:
+    university_data = agency_data[agency_data['Institution'] == selected_university]
+
+    # Main Discipline
+    discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
+    discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])
+
+    fig = plt.figure(figsize=(12, 6))
+    # Plot Each Discipline data for given University
+    for label in discipline_labels:
+        grouped_label = university_data[university_data[field] == label].groupby('FiscalYear')['AmountPaid'].sum().reset_index()
+        plt.plot(grouped_label['FiscalYear'], grouped_label['AmountPaid'], label=label, marker='o')
 plt.title(f"Disciplinary Funding for {selected_university}")
 plt.ylabel("Total Funding Amount")
 plt.xlabel("FiscalYear")

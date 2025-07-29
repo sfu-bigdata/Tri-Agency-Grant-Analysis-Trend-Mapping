@@ -105,13 +105,13 @@ else: # Display SFU and all U15 + UVic
             sfu_funding.append((year_data[year_data["Institution"] == "Simon Fraser University"]["AmountPaid"].sum() / year_data["AmountPaid"].sum()) * 100)
             u15_mean_funding.append(((year_data[year_data["Institution"].isin(U15)]["AmountPaid"].sum() / len(U15)) / year_data["AmountPaid"].sum()) * 100)
         plt.plot(years, sfu_funding, label='SFU', marker='o')
-        plt.plot(years, u15_mean_funding, label="U15 Mean", marker='o')
+        plt.plot(years, u15_mean_funding, label="U15 (+UVic) Mean", marker='o')
 
     else: # Display Funding Amount ($)
         sfu_by_year = data[data["Institution"] == "Simon Fraser University"].groupby('FiscalYear')['AmountPaid'].sum()
         u15_by_year = (data[data["Institution"].isin(U15)].groupby('FiscalYear')['AmountPaid'].sum()/len(U15))
         plt.plot(sfu_by_year.index, sfu_by_year.values, label='SFU', marker='o')
-        plt.plot(u15_by_year.index, u15_by_year.values, label="U15 Mean", marker='o')
+        plt.plot(u15_by_year.index, u15_by_year.values, label="U15 (+UVic) Mean", marker='o')
 
 # Set title and labels depending on selection
 if display_market:
@@ -182,7 +182,7 @@ if select_year_mode == "Single Year":
 
     # Compute U15 mean funding data
     u15_mean_total_amount, u15_mean_market_share, u15_mean_total_grants, u15_mean_avg_grant = compute_years(data, U15, year, year)
-    agency_market_share.append({"University": "U15 Mean", "Total Grant Amount": millify(u15_mean_total_amount, precision=2), 
+    agency_market_share.append({"University": "U15 + UVic Mean", "Total Grant Amount": millify(u15_mean_total_amount, precision=2), 
                                 "Market Share (%)": f"{u15_mean_market_share:.2f}%", "Num of Grants": int(u15_mean_total_grants), "Avg Grant Amount": millify(u15_mean_avg_grant, precision=2)})
 
     # Compute SFU funding data
@@ -209,7 +209,7 @@ elif select_year_mode == "Range of Years":
 
     # Compute U15 mean funding data
     u15_mean_total_amount, u15_mean_market_share, u15_mean_total_grants, u15_mean_avg_grant = compute_years(data, U15, from_year, to_year)
-    agency_market_share.append({"University": "U15 Mean", "Total Grant Amount": millify(u15_mean_total_amount, precision=2), 
+    agency_market_share.append({"University": "U15 + UVic Mean", "Total Grant Amount": millify(u15_mean_total_amount, precision=2), 
                                 "Market Share (%)": f"{u15_mean_market_share:.2f}%", "Num of Grants": int(u15_mean_total_grants), "Avg Grant Amount": millify(u15_mean_avg_grant, precision=2)})
 
     # Compute SFU funding data
@@ -235,7 +235,7 @@ elif select_year_mode == "Compare Years":
     
     # Computer U15 mean funding data
     u15_mean_change_amount, u15_mean_change_market_share, u15_mean_change_total_grants, u15_mean_change_avg_grant = compare_years(data, U15, year1, year2)
-    agency_market_share.append({"University": "U15 Mean", "Change in Grant Amount ($)": u15_mean_change_amount, "Change in Market Share (%)": u15_mean_change_market_share,
+    agency_market_share.append({"University": "U15 + UVic Mean", "Change in Grant Amount ($)": u15_mean_change_amount, "Change in Market Share (%)": u15_mean_change_market_share,
                                 "Change in Num of Grants": u15_mean_change_total_grants, "Change in Avg Grant Amount ($)": u15_mean_change_avg_grant})
 
     # Compute SFU funding data

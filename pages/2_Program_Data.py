@@ -66,11 +66,11 @@ st.download_button(
 )
 
 # Heatmap displaying Market Share
-st.title(f"Heatmap of Market Share for {dashboard_type}")
+st.title(f"Heatmap of Total Funding for {dashboard_type}")
 fig, ax = plt.subplots(figsize=(12, 6))
 heatmap_data = agency_data[(agency_data["Program_Name"].isin(program_labels)) & (agency_data['Institution'].isin(["Simon Fraser University"] + U15))].groupby(['Program_Name', 'Institution'])['AmountPaid'].sum().reset_index()
 sns.heatmap(heatmap_data.pivot_table(index='Program_Name', columns='Institution', values='AmountPaid', aggfunc='sum'), cmap="YlGnBu")
-plt.title(f"Heatmap of Program Market Share for {dashboard_type}")
+# plt.title(f"Heatmap of Program Market Share for {dashboard_type}")
 st.pyplot(fig)
 
 # Select Program
@@ -116,13 +116,17 @@ select_year_mode = st.selectbox("Select year range type:", ["Single Year", "Rang
 if select_year_mode == "Single Year":
     year = st.selectbox("Select Year:", sorted(years_list))
 
+    # Compute U15 + UVic mean Program Data
+    total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, U15, year, year)
+    table_data.append(["U15 + UVic Mean", millify(total_amount_u15, precision=1), millify(market_share_u15, precision=1), num_grants_u15, millify(avg_grant_amount_u15, precision=1)])
+
     # Compute SFU Program Data
-    total_amount_sfu, market_share_sfu, num_grants_sfu, avg_grant_amount_sfu = compute_years(agency_data, ["Simon Fraser University"], year, year)
+    total_amount_sfu, market_share_sfu, num_grants_sfu, avg_grant_amount_sfu = compute_years(data_label, ["Simon Fraser University"], year, year)
     table_data.append(["Simon Fraser University", millify(total_amount_sfu, precision=1), millify(market_share_sfu, precision=1), num_grants_sfu, millify(avg_grant_amount_sfu, precision=1)])
     
     # Compute U15 Program Data
     for u15 in U15:
-        total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(agency_data, [u15], year, year)
+        total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, [u15], year, year)
         table_data.append([u15, millify(total_amount_u15, precision=1), millify(market_share_u15, precision=1), num_grants_u15, millify(avg_grant_amount_u15, precision=1)])
 
     # Create & Display Table
@@ -139,16 +143,23 @@ if select_year_mode == "Single Year":
     )
 
 elif select_year_mode == "Range of Years":
-    start_year = st.selectbox("Select Start Year:", sorted(years_list))
-    end_year = st.selectbox("Select End Year:", sorted(years_list))
+    col1, col2 = st.columns(2)
+    with col1:
+        start_year = st.selectbox("Select Start Year:", sorted(years_list))
+    with col2:
+        end_year = st.selectbox("Select End Year:", sorted(years_list))
+
+    # Compute U15 + UVic Mean Program Data
+    total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, U15, start_year, end_year)
+    table_data.append(["U15 + UVic Mean", millify(total_amount_u15, precision=1), millify(market_share_u15, precision=1), num_grants_u15, millify(avg_grant_amount_u15, precision=1)])
 
     # Compute SFU Program Data
-    total_amount_sfu, market_share_sfu, num_grants_sfu, avg_grant_amount_sfu = compute_years(agency_data, ["Simon Fraser University"], start_year, end_year)
+    total_amount_sfu, market_share_sfu, num_grants_sfu, avg_grant_amount_sfu = compute_years(data_label, ["Simon Fraser University"], start_year, end_year)
     table_data.append(["Simon Fraser University", millify(total_amount_sfu, precision=1), millify(market_share_sfu, precision=1), num_grants_sfu, millify(avg_grant_amount_sfu, precision=1)])
     
     # Compute U15 Program Data
     for u15 in U15:
-        total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(agency_data, [u15], start_year, end_year)
+        total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, [u15], start_year, end_year)
         table_data.append([u15, millify(total_amount_u15, precision=1), millify(market_share_u15, precision=1), num_grants_u15, millify(avg_grant_amount_u15, precision=1)])
 
     # Create & Display Table
@@ -165,16 +176,23 @@ elif select_year_mode == "Range of Years":
     )
 
 elif select_year_mode == "Compare Years":
-    year1 = st.selectbox("Select Year1:", sorted(years_list))
-    year2 = st.selectbox("Select Year2:", sorted(years_list))
+    col1, col2 = st.columns(2)
+    with col1:
+        year1 = st.selectbox("Select Year1:", sorted(years_list))
+    with col2:
+        year2 = st.selectbox("Select Year2:", sorted(years_list))
+
+    # Compute U15 + UVic Mean Program Data
+    amount_change_u15, market_share_change_u15, num_grants_change_u15, avg_grant_change_u15 = compare_years(data_label, U15, year1, year2)
+    table_data.append(["U15 + UVic", amount_change_u15, market_share_change_u15, num_grants_change_u15, avg_grant_change_u15])
 
     # Compute SFU Program Data
-    amount_change_sfu, market_share_change_sfu, num_grants_change_sfu, avg_grant_change_sfu = compare_years(agency_data, ["Simon Fraser University"], year1, year2)
+    amount_change_sfu, market_share_change_sfu, num_grants_change_sfu, avg_grant_change_sfu = compare_years(data_label, ["Simon Fraser University"], year1, year2)
     table_data.append(["Simon Fraser University", amount_change_sfu, market_share_change_sfu, num_grants_change_sfu, avg_grant_change_sfu])  
 
     # Compute U15 Program Data
     for u15 in U15:
-        amount_change_u15, market_share_change_u15, num_grants_change_u15, avg_grant_change_u15 = compare_years(agency_data, [u15], year1, year2)
+        amount_change_u15, market_share_change_u15, num_grants_change_u15, avg_grant_change_u15 = compare_years(data_label, [u15], year1, year2)
         table_data.append([u15, amount_change_sfu, market_share_change_u15, num_grants_change_u15, avg_grant_change_u15]) 
 
     # Create a DataFrame from the table data
@@ -197,14 +215,20 @@ elif select_year_mode == "Compare Years":
 # Program Market Share Dashboard
 st.title(f"Program Market Share for {dashboard_type}")
 
-university = st.selectbox("Select University:", ["Simon Fraser University"] + U15)
+university = st.selectbox("Select University:", ["U15 (+UVic) Mean"] + ["Simon Fraser University"] + U15)
 
 fig = plt.figure(figsize=(12, 6))
-# Compute market share for each program for the selected university
-for label in program_labels:
-    program_data = agency_data[(agency_data["Program_Name"] == label) & (agency_data['Institution'] == university)]
-    market_share = (program_data.groupby('FiscalYear')['AmountPaid'].sum() / agency_data[(agency_data["Program_Name"] == label)].groupby('FiscalYear')['AmountPaid'].sum()).reset_index()
-    plt.plot(market_share['FiscalYear'], market_share['AmountPaid'] * 100, label=label, marker='o')
+if university == "U15 (+UVic) Mean":
+    for label in program_labels:
+        program_data = agency_data[(agency_data["Program_Name"] == label) & (agency_data['Institution'].isin(U15))]
+        market_share = (program_data.groupby('FiscalYear')['AmountPaid'].sum() / agency_data[(agency_data["Program_Name"] == label)].groupby('FiscalYear')['AmountPaid'].sum()).reset_index()
+        plt.plot(market_share['FiscalYear'], (market_share['AmountPaid'] / len(U15)) * 100, label=label, marker='o')
+else:
+    # Compute market share for each program for the selected university
+    for label in program_labels:
+        program_data = agency_data[(agency_data["Program_Name"] == label) & (agency_data['Institution'] == university)]
+        market_share = (program_data.groupby('FiscalYear')['AmountPaid'].sum() / agency_data[(agency_data["Program_Name"] == label)].groupby('FiscalYear')['AmountPaid'].sum()).reset_index()
+        plt.plot(market_share['FiscalYear'], market_share['AmountPaid'] * 100, label=label, marker='o')
 
 # Set title and labels
 plt.title(f"Program Market Share for {dashboard_type} - {university}")
