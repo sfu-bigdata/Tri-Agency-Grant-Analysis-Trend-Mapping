@@ -8,6 +8,8 @@ from collections import Counter
 from sklearn.metrics.pairwise import cosine_similarity
 
 from transformers import AutoTokenizer, AutoModel
+from keybert import KeyBERT
+
 import joblib
 
 import torch
@@ -22,6 +24,8 @@ END_YEAR = int(sys.argv[2])
 model_name = "sentence-transformers/all-MiniLM-L6-v2"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModel.from_pretrained(model_name).to(device)
+
+kw_model = KeyBERT()
 
 class Classifier(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -61,12 +65,14 @@ grant_descriptors = [
     "FundingCode_CodeFinancement", "FiscalYear_AnneeFinanciere", #"FundingStartDate_DatePremierVersement", "FundingEndDate_DateDernierVersement", 
     "ResearchInstitutionNameEN_NomEtablissementRechercheAN", "ResearchInstitutionNameFR_NomEtablissementRechercheFR",
     "AmountPaidFY_MontantPayeAF", "ProgramNameEN_NomProgrammeAN", "ProgramTypeEN_TypeProgrammeAN", 
-    "ApplicationTitle_TitreDemande", "PrimaryThemeEN_ThemePrincipalAN", "AllResearchCategoriesEN_TousCategoriesRechercheAN"
+    "ApplicationTitle_TitreDemande", "PrimaryThemeEN_ThemePrincipalAN", "AllResearchCategoriesEN_TousCategoriesRechercheAN",
+    "ApplicationKeywords_MotsClesDemande", "ApplicationAbstract_ResumeDemande"
 ]
 
 col_names = [
     'Unique_ID', 'FiscalYear', 'Institution', 'Institution_FR',
-    'AmountPaid', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research'
+    'AmountPaid', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research',
+    'Keywords', 'Summary'
 ]
 
 CIHR_DATA = CIHR_DATA[grant_descriptors]
@@ -98,6 +104,8 @@ CIHR_DATA["Program_Name"] = CIHR_DATA["Program_Name"].astype(str).apply(
     lambda x: "Operating Grant" if any(i in x for i in ["Operating Grant", "Operating Gr", "Op Grant", "Op. Grant", "Op Gr", "Op. Gr"]) else x)
 CIHR_DATA["Program_Name"] = CIHR_DATA["Program_Name"].astype(str).apply(
     lambda x: "Project Grant" if any(i in x for i in ["Project Grant"]) else x)
+
+CIHR_DATA['Keywords'] = CIHR_DATA['Keywords'].str.lower()
 
 label_mapping = joblib.load("models/CIHR_MD_label_mapping.pkl")
 
@@ -146,12 +154,14 @@ grant_descriptors = [
     "ApplicationID", "FiscalYear-Exercice financier",
     "Institution-Établissement",
     "AwardAmount", "ProgramNameEN", "GroupEN",
-    "ApplicationTitle", "AreaOfApplicationGroupEN", "ResearchSubjectGroupEN"
+    "ApplicationTitle", "AreaOfApplicationGroupEN", "ResearchSubjectGroupEN",
+    "Keyword", "ApplicationSummary"
 ]
 
 col_names = [
     'Unique_ID', 'FiscalYear', 'Institution', 
-    'AmountPaid', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research'
+    'AmountPaid', 'Program_Name', 'Program_Type', 'Title', 'Main_Discipline', 'Area_of_Research',
+    'Keywords', 'Summary'
 ]
 
 NSERC_DATA = NSERC_DATA[grant_descriptors]
@@ -170,6 +180,17 @@ NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).str.strip()
 NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['DISCOVERY RESEARCH**', 'DISCOVERY RESEARCH'], 'Discovery Research')
 NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['RESEARCH PARTNERSHIPS**', 'RESEARCH PARTNERSHIPS'], 'Research Partnerships')
 NSERC_DATA['Program_Type'] = NSERC_DATA['Program_Type'].replace(['RESEARCH TRAINING AND TALENT DEVELOPMENT'], 'Research Training and Talent Development')
+
+mask = NSERC_DATA["Summary"] == "No summary - Aucun sommaire"
+NSERC_DATA.loc[mask, "Summary"] = NSERC_DATA.loc[mask, "Title"]
+
+def extract_keywords(text):
+    keywords = kw_model.extract_keywords(text, top_n=5)
+    keyword_list = [kw[0] for kw in keywords]  # Extract the keywords (ignore scores)
+    return '; '.join(keyword_list)
+
+NSERC_DATA['Keywords'] = NSERC_DATA['Summary'].astype(str).apply(extract_keywords)
+NSERC_DATA['Keywords'] = NSERC_DATA['Keywords'].str.lower()
 
 label_mapping = joblib.load("models/NSERC_MD_label_mapping.pkl")
 
@@ -219,12 +240,14 @@ grant_descriptors = [
     "cle", "Fiscal_Year-Exercice_financier",
     "Institution",
     "Amount-Montant", "Program",
-    "Title-Titre", "Area_of_Research", "Main_Discipline"
+    "Title-Titre", "Area_of_Research", "Main_Discipline",
+    "Keywords-Mots-clés", "Title-Titre"
 ]
 
 col_names = [
     'Unique_ID', 'FiscalYear', 'Institution',
-    'AmountPaid', 'Program_Name', 'Title', 'Main_Discipline', 'Area_of_Research'
+    'AmountPaid', 'Program_Name', 'Title', 'Main_Discipline', 'Area_of_Research',
+    'Keywords', 'Summary'
 ]
 
 SSHRC_DATA = SSHRC_DATA[grant_descriptors]
@@ -242,6 +265,8 @@ SSHRC_DATA['FiscalYear'] = SSHRC_DATA['FiscalYear'].astype(int)
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: str.removeprefix(x, "The "))
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).str.strip()
+
+SSHRC_DATA['Keywords'] = SSHRC_DATA['Keywords'].str.lower()
 
 label_mapping = joblib.load("models/SSHRC_MD_label_mapping.pkl")
 
