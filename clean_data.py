@@ -185,7 +185,7 @@ mask = NSERC_DATA["Summary"] == "No summary - Aucun sommaire"
 NSERC_DATA.loc[mask, "Summary"] = NSERC_DATA.loc[mask, "Title"]
 
 def extract_keywords(text):
-    keywords = kw_model.extract_keywords(text, top_n=5)
+    keywords = kw_model.extract_keywords(text, keyphrase_ngram_range=(1, 2), stop_words='english', top_n=5)
     keyword_list = [kw[0] for kw in keywords]  # Extract the keywords (ignore scores)
     return '; '.join(keyword_list)
 
