@@ -207,7 +207,7 @@ else:
         )
 
 # Select University
-selected_university = st.selectbox("Select University:", ["U15 (+UVic) Mean"] + ["Simon Fraser University"] + U15)
+selected_university = st.selectbox("Select University:", ["U15 (+UVic) Mean"] + ["U15 (+UVic) Median"] +["Simon Fraser University"] + U15)
 if selected_university == "U15 (+UVic) Mean":
     university_data = agency_data[agency_data['Institution'].isin(U15)]
 
@@ -217,9 +217,25 @@ if selected_university == "U15 (+UVic) Mean":
 
     fig = plt.figure(figsize=(12, 6))
     for label in discipline_labels:
-        grouped_label = university_data[university_data[field] == label].groupby('FiscalYear')['AmountPaid'].sum().reset_index()
-        plt.plot(grouped_label['FiscalYear'], grouped_label['AmountPaid'] / len(U15), label=label, marker='o')
+        fiscal_years = university_data['FiscalYear'].unique()
+        grouped_label = university_data[university_data[field] == label].groupby(['Institution', 'FiscalYear'])['AmountPaid'].sum().reset_index()
+        amounts_paid = [grouped_label[grouped_label['FiscalYear'] == year]['AmountPaid'].mean() for year in fiscal_years]
+        plt.plot(fiscal_years, amounts_paid, label=label, marker='o')
+    
 
+elif selected_university == "U15 (+UVic) Median":
+    university_data = agency_data[agency_data['Institution'].isin(U15)]
+
+    # Main Discipline
+    discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
+    discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])
+
+    fig = plt.figure(figsize=(12, 6))
+    for label in discipline_labels:
+        fiscal_years = university_data['FiscalYear'].unique()
+        grouped_label = university_data[university_data[field] == label].groupby(['Institution', 'FiscalYear'])['AmountPaid'].sum().reset_index()
+        amounts_paid = [grouped_label[grouped_label['FiscalYear'] == year]['AmountPaid'].median() for year in fiscal_years]
+        plt.plot(fiscal_years, amounts_paid, label=label, marker='o')
 else:
     university_data = agency_data[agency_data['Institution'] == selected_university]
 
