@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import chardet
 import sys
 import re
 
@@ -82,8 +83,8 @@ CIHR_DATA.columns = col_names
 CIHR_DATA.dropna(subset=["AmountPaid"], inplace=True)
 
 CIHR_DATA['FiscalYear'] = CIHR_DATA['FiscalYear']//100 # convert to year (ex. 201920 -> 2019)
-CIHR_DATA = CIHR_DATA[(CIHR_DATA["FiscalYear"] >= START_YEAR) & (CIHR_DATA["FiscalYear"] <= END_YEAR)]
 CIHR_DATA['FiscalYear'] = CIHR_DATA['FiscalYear'].astype(int)
+CIHR_DATA = CIHR_DATA[(CIHR_DATA["FiscalYear"] >= START_YEAR) & (CIHR_DATA["FiscalYear"] <= END_YEAR)]
 
 CIHR_DATA['Institution'] = CIHR_DATA['Institution'].fillna(CIHR_DATA['Institution_FR'])
 CIHR_DATA.drop(columns=["Institution_FR"], inplace=True)
@@ -146,7 +147,17 @@ CIHR_DATA['Area_of_Research'] = CIHR_DATA['Area_of_Research'].str.capitalize()
 nserc_path = "raw_data/NSERC/"
 nserc_files = Path(nserc_path).glob("*.csv")
 
-NSERC_DFS = [pd.read_csv(f, encoding = "ISO-8859-1") for f in nserc_files]
+NSERC_DFS = []
+for f in nserc_files:
+    # Detect encoding using a sample of the file
+    with open(f, 'rb') as file:
+        raw_data = file.read(10000)  # Read first 10KB for detection
+        result = chardet.detect(raw_data)
+        enc = result['encoding']
+
+    print(f"Reading {f} with encoding {enc}")
+    df = pd.read_csv(f, encoding=enc)
+    NSERC_DFS.append(df)
 NSERC_DATA = pd.concat(NSERC_DFS, ignore_index=True)
 
 
@@ -170,8 +181,9 @@ NSERC_DATA.columns = col_names
 # NSERC_DATA.drop_duplicates(subset=["Unique_ID"], inplace=True)
 NSERC_DATA.dropna(subset=["AmountPaid"], inplace=True)
 
-NSERC_DATA = NSERC_DATA[(NSERC_DATA["FiscalYear"] >= START_YEAR) & (NSERC_DATA["FiscalYear"] <= END_YEAR)]
+# NSERC_DATA = NSERC_DATA[NSERC_DATA['FiscalYear'].astype(str).str.isnumeric()]
 NSERC_DATA['FiscalYear'] = NSERC_DATA['FiscalYear'].astype(int)
+NSERC_DATA = NSERC_DATA[(NSERC_DATA["FiscalYear"] >= START_YEAR) & (NSERC_DATA["FiscalYear"] <= END_YEAR)]
 
 NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
 NSERC_DATA["Institution"] = NSERC_DATA["Institution"].astype(str).apply(lambda x: str.removeprefix(x, "The "))
@@ -259,8 +271,8 @@ SSHRC_DATA.dropna(subset=["AmountPaid"], inplace=True)
 SSHRC_DATA["AmountPaid"] = SSHRC_DATA["AmountPaid"].astype(str).str.replace(",", "", regex=False).str.replace("$", "", regex=False).str.strip()
 SSHRC_DATA["AmountPaid"] = pd.to_numeric(SSHRC_DATA["AmountPaid"])
 
-SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["FiscalYear"] >= START_YEAR) & (SSHRC_DATA["FiscalYear"] <= END_YEAR)]
 SSHRC_DATA['FiscalYear'] = SSHRC_DATA['FiscalYear'].astype(int)
+SSHRC_DATA = SSHRC_DATA[(SSHRC_DATA["FiscalYear"] >= START_YEAR) & (SSHRC_DATA["FiscalYear"] <= END_YEAR)]
 
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: re.sub(r'\([^)]*\)', '', x))
 SSHRC_DATA["Institution"] = SSHRC_DATA["Institution"].astype(str).apply(lambda x: str.removeprefix(x, "The "))

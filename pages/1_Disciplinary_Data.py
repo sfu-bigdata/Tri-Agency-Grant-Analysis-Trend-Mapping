@@ -100,7 +100,7 @@ elif select_year_mode == "Range of Years":
     with column1:
         year1 = st.selectbox("Select Year1:", sorted(years_list))
     with column2:
-        year2 = st.selectbox("Select Year2:", sorted(years_list))
+        year2 = st.selectbox("Select Year2:", sorted(years_list, reverse=True))
     data = agency_data[(agency_data["FiscalYear"] >= year1) & (agency_data["FiscalYear"] <= year2)]
 
     # Select Top 10 Disciplines by Revenue
@@ -160,7 +160,7 @@ if select_year_mode == "Compare Years":
     df["Change in Market Share (%)"] = df["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     df["Change in Num of Grants"] = df["Change in Num of Grants"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     df["Change in Avg Grant Amount ($)"] = df["Change in Avg Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
-    st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+    st.markdown(df.style.hide(axis="index").to_html(), unsafe_allow_html=True)
 
     # Export Table as CSV
     st.download_button(
@@ -178,6 +178,7 @@ else:
     colors_mpl = plt.cm.tab20.colors[:len(data.index)]
     ax.pie(data.values, colors=colors_mpl, labels=None, autopct='%1.1f%%', startangle=90)
     plt.legend(labels=data.index, loc="center left", bbox_to_anchor=(1.0, 0.8))
+    plt.title(f"{field_type} Market Share Pie Chart")
     st.pyplot(fig)
 
     # Export Pie Chart
@@ -196,7 +197,7 @@ else:
     if display_table:
         st.write(f"{field_type} Market Share Table")
         df = pd.DataFrame(table_data, columns=columns)
-        st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+        st.markdown(df.style.hide(axis="index").to_html(), unsafe_allow_html=True)
 
         # Export Table as CSV
         st.download_button(
@@ -217,7 +218,7 @@ if selected_university == "U15 (+UVic) Mean":
 
     fig = plt.figure(figsize=(12, 6))
     for label in discipline_labels:
-        fiscal_years = university_data['FiscalYear'].unique()
+        fiscal_years = sorted(university_data['FiscalYear'].unique())
         grouped_label = university_data[university_data[field] == label].groupby(['Institution', 'FiscalYear'])['AmountPaid'].sum().reset_index()
         amounts_paid = [grouped_label[grouped_label['FiscalYear'] == year]['AmountPaid'].mean() for year in fiscal_years]
         plt.plot(fiscal_years, amounts_paid, label=label, marker='o')
@@ -232,7 +233,7 @@ elif selected_university == "U15 (+UVic) Median":
 
     fig = plt.figure(figsize=(12, 6))
     for label in discipline_labels:
-        fiscal_years = university_data['FiscalYear'].unique()
+        fiscal_years = sorted(university_data['FiscalYear'].unique())
         grouped_label = university_data[university_data[field] == label].groupby(['Institution', 'FiscalYear'])['AmountPaid'].sum().reset_index()
         amounts_paid = [grouped_label[grouped_label['FiscalYear'] == year]['AmountPaid'].median() for year in fiscal_years]
         plt.plot(fiscal_years, amounts_paid, label=label, marker='o')

@@ -39,15 +39,8 @@ if dashboard_type != "All":
     if program_type != "All":
         agency_data = agency_data[agency_data["Program_Name"] == program_type]
 
-all_keywords = agency_data['Keywords'].str.split(';')
-flattened_keywords = [
-    kw.strip()
-    for sublist in all_keywords
-    if isinstance(sublist, list)  # Skip NaN or non-list entries
-    for kw in sublist
-    if isinstance(kw, str)        # In case of weird non-string entries
-]
-keyword_counts = Counter(flattened_keywords)
+all_keywords = agency_data['Keywords'].dropna().str.split(';').explode()
+keyword_counts = Counter(all_keywords)
 keyword_freq_df = pd.DataFrame(keyword_counts.items(), columns=['Keyword', 'Frequency'])
 keyword_freq_df = keyword_freq_df.sort_values(by='Frequency', ascending=False)
 
@@ -62,8 +55,25 @@ plt.ylabel('Frequency')
 plt.title('Top 20 Keywords by Frequency')
 st.pyplot(plt.gcf())
 
+# Save bar chart as image
+buf = io.BytesIO()
+plt.savefig(buf, format="png", bbox_inches="tight")
+buf.seek(0)
+st.download_button(
+    label="Export Plot",
+    data=buf,
+    file_name=f"{dashboard_type}_keyword_freq.png",
+    mime="image/png"
+)
 if st.checkbox("Show Table"):
-    st.write(keyword_freq_df.nlargest(20, 'Frequency').reset_index(drop=True))
+    st.markdown(bar_chart_data.style.hide(axis="index").to_html(), unsafe_allow_html=True)
+    st.download_button(
+        label="Export Table as CSV",
+        data=keyword_freq_df.to_csv(index=False),
+        file_name=f"{dashboard_type}_marketshare_data.csv",
+        mime="text/csv"
+    )
+
 
 st.title("Keyword Grant Data")
 
@@ -90,7 +100,7 @@ if select_year_mode == "Single Year":
     columns = ['Keywords', 'Total Amount ($)', 'Market Share (%)', 'Number of Awards', 'Avg Award Amount ($)']
 
     df = pd.DataFrame(table_data, columns=columns)
-    st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+    st.markdown(df.style.hide(axis="index").to_html(), unsafe_allow_html=True)
 
     # Export Table as CSV
     st.download_button(
@@ -114,11 +124,11 @@ elif select_year_mode == "Range of Years":
     for label in discipline_labels:
         label_data = data[data['Keywords'] == label]
         table_data.append([label, millify(label_data['AmountPaid'].sum(), precision=1), millify(label_data['AmountPaid'].sum()/data['AmountPaid'].sum()*100, precision=2),
-                           millify(label_data['AmountPaid'].count(), precision=2), millify(label_data['AmountPaid'].mean(), precision=1)])
+                           millify(len(label_data), precision=2), millify(label_data['AmountPaid'].mean(), precision=1)])
     columns = ['Keywords', 'Total Amount ($)', 'Market Share (%)', 'Number of Awards', 'Avg Award Amount ($)']
 
     df = pd.DataFrame(table_data, columns=columns)
-    st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+    st.markdown(df.style.hide(axis="index").to_html(), unsafe_allow_html=True)
 
     # Export Table as CSV
     st.download_button(
@@ -138,24 +148,28 @@ elif select_year_mode == "Compare Years":
     year1_data = data[data['FiscalYear'] == year1]
     year2_data = data[data['FiscalYear'] == year2] 
     
-    discipline_labels = (year2_data['Keywords'].value_counts() - year1_data['Keywords'].value_counts()).nlargest(10).index
+    discipline_labels = year2_data['Keywords'].value_counts().nlargest(10).index
 
     for label in discipline_labels:
         year1_label_data = year1_data[year1_data['Keywords'] == label]
         year2_label_data = year2_data[year2_data['Keywords'] == label]
-        table_data.append([label, millify(year2_label_data['AmountPaid'].sum() - year1_label_data['AmountPaid'].sum(), precision=1),
-                           millify(year2_label_data['AmountPaid'].sum()/year1_data['AmountPaid'].sum()*100 - year1_label_data['AmountPaid'].sum()/year1_data['AmountPaid'].sum()*100, precision=2),
-                           millify(year2_label_data['AmountPaid'].count() - year1_label_data['AmountPaid'].count(), precision=2),
-                           millify(year2_label_data['AmountPaid'].mean() - year1_label_data['AmountPaid'].mean(), precision=1)])
-    columns = ['Keywords', 'Change in Total Amount ($)', 'Change in Market Share (%)', 'Change in Number of Awards', 'Change in Avg Award Amount ($)']
+        table_data.append([label, year2_label_data['AmountPaid'].sum() - year1_label_data['AmountPaid'].sum(),
+                           year2_label_data['AmountPaid'].sum()/year1_data['AmountPaid'].sum()*100 - year1_label_data['AmountPaid'].sum()/year1_data['AmountPaid'].sum()*100,
+                           year2_label_data['AmountPaid'].count() - year1_label_data['AmountPaid'].count(),
+                           year2_label_data['AmountPaid'].mean() - year1_label_data['AmountPaid'].mean()])
+    columns = ['Keywords', 'Change in Total Amount ($)', 'Change in Market Share (%)', 'Change in Num of Grants', 'Change in Avg Grant Amount ($)']
 
-    df = pd.DataFrame(table_data, columns=columns)
-    st.markdown(df.to_html(escape=False), unsafe_allow_html=True)
+    market_share_table = pd.DataFrame(table_data, columns=columns)
+    market_share_table["Change in Total Amount ($)"] = market_share_table["Change in Total Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=2)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=2)}</span>')
+    market_share_table["Change in Market Share (%)"] = market_share_table["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
+    market_share_table["Change in Num of Grants"] = market_share_table["Change in Num of Grants"].apply(lambda x: f'<span style="color: red;">{x}</span>' if x < 0 else f'<span style="color: green;">{x}</span>')
+    market_share_table["Change in Avg Grant Amount ($)"] = market_share_table["Change in Avg Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=2)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=2)}</span>')
+    st.markdown(market_share_table.style.hide(axis="index").to_html(), unsafe_allow_html=True)
 
     # Export Table as CSV
     st.download_button(
         label="Export Table as CSV",
-        data=df.to_csv(index=False),
+        data=market_share_table.to_csv(index=False),
         file_name=f"{dashboard_type}_keywords_marketshare_data.csv",
         mime="text/csv"
     )
