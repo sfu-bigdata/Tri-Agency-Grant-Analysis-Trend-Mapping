@@ -311,7 +311,7 @@ elif select_year_mode == "Compare Years":
         amount_change_u15, market_share_change_u15, num_grants_change_u15, avg_grant_change_u15 = compare_years(data_label, [u15], False, year1, year2)
         table_data.append([u15, amount_change_sfu, market_share_change_u15, num_grants_change_u15, avg_grant_change_u15]) 
 
-    # Create a DataFrame from the table data
+    # Create & Format Table
     df = pd.DataFrame(table_data, columns=["University", "Total Amount Change ($)", "Market Share Change (%)", "Number of Grants Change", "Average Grant Amount Change ($)"])
     df["Total Amount Change ($)"] = df["Total Amount Change ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     df["Market Share Change (%)"] = df["Market Share Change (%)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=2)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
