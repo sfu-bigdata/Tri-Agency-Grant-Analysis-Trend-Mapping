@@ -6,15 +6,11 @@ import io
 
 st.set_page_config(page_title="Disiplinary Data", page_icon="")
 
-U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
-       "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
-       "Queen's University", "University of Saskatchewan", "University of Toronto", "University of Waterloo", "University of Western Ontario"]
-
+# U15 + UVic
 U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
        "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
        "Queen's University", "University of Saskatchewan", "University of Toronto", "University of Waterloo", "University of Western Ontario",
-       "University of Victoria"] # U15 + UVic
-
+       "University of Victoria"] 
 # Load data
 TRIAGENCY_DATA = pd.read_csv("clean_data/TRIAGENCY_DATA.csv")
 
@@ -34,7 +30,7 @@ if field_type == "Main Discipline":
 elif field_type == "Area of Research":
     field = "Area_of_Research"
 
-# Discipline Trends
+## Discipline Trends
 st.title(f"{field_type} Trends for {dashboard_type}")
 
 custom_labels = st.checkbox("Use custom labels")
@@ -69,7 +65,7 @@ st.download_button(
     mime="image/png"
 )
 
-# Pie Chart / Table for Market Share data
+## Disciplinary Market Share data
 st.title(f"{field_type} Market Share")
 
 table_data = []
@@ -155,6 +151,7 @@ elif select_year_mode == "Compare Years":
 if select_year_mode == "Compare Years":
     st.write(f"{field_type} Market Share Table")
     
+    # Create & Format Table
     df = pd.DataFrame(table_data, columns=columns)
     df["Change in Amount ($)"] = df["Change in Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     df["Change in Market Share (%)"] = df["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
@@ -207,15 +204,16 @@ else:
             mime="text/csv"
         )
 
-# Select University
+## Disciplinary Funding by University
 selected_university = st.selectbox("Select University:", ["U15 (+UVic) Mean"] + ["U15 (+UVic) Median"] +["Simon Fraser University"] + U15)
 if selected_university == "U15 (+UVic) Mean":
     university_data = agency_data[agency_data['Institution'].isin(U15)]
 
-    # Main Discipline
+    # Select Main Discipline (or by default: top 10 by revenby)
     discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
     discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])    
 
+    # Plot each Discipline trend
     fig = plt.figure(figsize=(12, 6))
     for label in discipline_labels:
         fiscal_years = sorted(university_data['FiscalYear'].unique())
@@ -227,10 +225,11 @@ if selected_university == "U15 (+UVic) Mean":
 elif selected_university == "U15 (+UVic) Median":
     university_data = agency_data[agency_data['Institution'].isin(U15)]
 
-    # Main Discipline
+    # Select Main Discipline (or by default: top 10 by revenby)
     discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
     discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])
 
+    # Plot each Discipline trend
     fig = plt.figure(figsize=(12, 6))
     for label in discipline_labels:
         fiscal_years = sorted(university_data['FiscalYear'].unique())
@@ -240,12 +239,12 @@ elif selected_university == "U15 (+UVic) Median":
 else:
     university_data = agency_data[agency_data['Institution'] == selected_university]
 
-    # Main Discipline
+    # Select Main Discipline (or by default: top 10 by revenby)
     discipline_revenue = university_data.groupby(field)['AmountPaid'].sum()
     discipline_labels = st.multiselect('Select disciplines', discipline_revenue.reset_index()[field].unique(), default=discipline_revenue.nlargest(10).reset_index()[field])
 
+    # Plot each Discipline trend 
     fig = plt.figure(figsize=(12, 6))
-    # Plot Each Discipline data for given University
     for label in discipline_labels:
         grouped_label = university_data[university_data[field] == label].groupby('FiscalYear')['AmountPaid'].sum().reset_index()
         plt.plot(grouped_label['FiscalYear'], grouped_label['AmountPaid'], label=label, marker='o')

@@ -8,14 +8,11 @@ import  io
 
 st.set_page_config(page_title="Program Data", page_icon="")
 
-U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
-       "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
-       "Queen's University", "University of Saskatchewan", "University of Toronto", "University of Waterloo", "University of Western Ontario"]
-
+# U15 + UVic
 U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
        "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
        "Queen's University", "University of Saskatchewan", "University of Toronto", "University of Waterloo", "University of Western Ontario",
-       "University of Victoria"] # U15 + UVic
+       "University of Victoria"] 
 
 # Load data
 TRIAGENCY_DATA = pd.read_csv("clean_data/TRIAGENCY_DATA.csv")
@@ -33,7 +30,7 @@ elif dashboard_type == "SSHRC":
     agency_data = TRIAGENCY_DATA[TRIAGENCY_DATA["Agency"] == "SSHRC"].copy()
     specifc_labels = ["Insight Development Grant", "Insight Grants", "Partnership Grants"]
 
-# Program Data Trends
+## Program Data Trends
 st.title(f"Program Trends for {dashboard_type}")
 
 custom_labels = st.checkbox("Use custom labels")
@@ -66,23 +63,18 @@ st.download_button(
     mime="image/png"
 )
 
-# # Heatmap displaying Market Share
-# st.title(f"Heatmap of Total Funding for {dashboard_type}")
-# fig, ax = plt.subplots(figsize=(12, 6))
-# heatmap_data = agency_data[(agency_data["Program_Name"].isin(program_labels)) & (agency_data['Institution'].isin(["Simon Fraser University"] + U15))].groupby(['Program_Name', 'Institution'])['AmountPaid'].sum().reset_index()
-# sns.heatmap(heatmap_data.pivot_table(index='Program_Name', columns='Institution', values='AmountPaid', aggfunc='sum'), cmap="YlGnBu")
-# # plt.title(f"Heatmap of Program Market Share for {dashboard_type}")
-# st.pyplot(fig)
-
 # Select Program
 label = st.selectbox("Select Program:", program_labels)
 
-st.title(f"Program Market Share for {dashboard_type}")
+## University Funding by Program
+st.title(f"Program Funding for {dashboard_type}")
 
-university = st.multiselect("Select University:", ["U15 (+UVic) Mean"] + ["U15 (+UVic) Median"] + ["Simon Fraser University"] + U15, ["U15 (+UVic) Mean", "U15 (+UVic) Median", "Simon Fraser University"])
+# Select Universities
+university = st.multiselect("Select University:", ["U15 (+UVic) Mean"] + ["U15 (+UVic) Median"] + ["Simon Fraser University"] + U15, default=["U15 (+UVic) Mean", "U15 (+UVic) Median", "Simon Fraser University"])
 
 fig = plt.figure(figsize=(12, 6))
 fiscal_years = sorted(agency_data["FiscalYear"].unique())
+# Compute & Plot University Funding Trends for given Program
 for uni in university:
     if uni == "U15 (+UVic) Mean":
         program_data = agency_data[(agency_data["Program_Name"] == label) & (agency_data['Institution'].isin(U15))]
@@ -159,46 +151,53 @@ def compute_years(data, institutions, median, year1, year2):
 
     return total_amount, total_market_share, total_grants, avg_grant
 
-# Helper Function to Compute Funding Data
+# Helper Function to Compute Compare Years Funding
 def compare_years(data, institutions, median, year1, year2):
     """Compare grant funding data for selected institutions between two years.
 
     Returns tuple:
       (Δ total amount, Δ market share, Δ number of grants, Δ avg grant amount)
     """
+    # Compute total amounts by institution
     def safe_sum(df):
         if df.empty:
             return pd.Series(0, index=institutions)
         return df.groupby("Institution")["AmountPaid"].sum().reindex(institutions, fill_value=0)
 
+    # Compute market share
     def safe_market_share(total, total_all):
         return (total / total_all) * 100 if total_all > 0 else 0
 
+    # Filter data for selected institutions & years
     y1 = data[(data["Institution"].isin(institutions)) & (data["FiscalYear"] == year1)]
     y2 = data[(data["Institution"].isin(institutions)) & (data["FiscalYear"] == year2)]
-
+    
+    # Compute total amount for the program
     total_all_y1 = data[data["FiscalYear"] == year1]["AmountPaid"].sum()
     total_all_y2 = data[data["FiscalYear"] == year2]["AmountPaid"].sum()
 
-    totals_y1 = safe_sum(y1)
+    # Compute total amounts by institution
+    totals_y1 = safe_sum(y1) 
     totals_y2 = safe_sum(y2)
 
+    # Compute number of grants by institution
     grants_y1 = y1.groupby("Institution")["AmountPaid"].count().reindex(institutions, fill_value=0)
     grants_y2 = y2.groupby("Institution")["AmountPaid"].count().reindex(institutions, fill_value=0)
 
+    # Compute average grant amount
     avg_grant_y1 = totals_y1 / grants_y1.replace(0, 1)
     avg_grant_y1[grants_y1 == 0] = 0
     avg_grant_y2 = totals_y2 / grants_y2.replace(0, 1)
     avg_grant_y2[grants_y2 == 0] = 0
 
-    if not median:
+    if not median: # Compute Mean across all institutions
         result = (
             totals_y2.mean() - totals_y1.mean(),
             safe_market_share(totals_y2.mean(), total_all_y2) - safe_market_share(totals_y1.mean(), total_all_y1),
             grants_y2.mean() - grants_y1.mean(),
             avg_grant_y2.mean() - avg_grant_y1.mean(),
         )
-    else:
+    else: # Compute Median across all institutions
         result = (
             (totals_y2 - totals_y1).median(),
             safe_market_share(totals_y2.median(), total_all_y2) - safe_market_share(totals_y1.median(), total_all_y1),

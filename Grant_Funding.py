@@ -6,10 +6,6 @@ import io
 
 st.set_page_config(page_title="Grant Funding Dashboard", page_icon="")
 
-U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
-       "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
-       "Queen's University", "University of Saskatchewan", "University of Toronto", "University of Waterloo", "University of Western Ontario"]
-
 # U15 + UVic
 U15 = ["University of Alberta", "University of British Columbia", "University of Calgary", "Dalhousie University", "Université Laval", 
        "University of Manitoba", "McGill University", "McMaster University", "Université de Montréal", "University of Ottawa", 
@@ -29,7 +25,7 @@ if total_funding: # Total Funding of All Agencies Combined
     total_funding = data.groupby('FiscalYear')['AmountPaid'].sum()
     plt.plot(total_funding.index, total_funding.values, marker='o', label="Total Funding")
 
-else: # Total Funding of Each Agency
+else: # Total Funding for each Agency
     agencies_selected = st.multiselect("Select Agencies", ["CIHR", "NSERC", "SSHRC"], ["CIHR", "NSERC", "SSHRC"])
     fig = plt.figure(figsize=(12, 6))
     for agency in agencies_selected:
@@ -328,7 +324,7 @@ elif select_year_mode == "Compare Years":
                                     "Change in Num of Grants": u15_change_total_grants, "Change in Avg Grant Amount ($)": u15_change_avg_grant})
 
 if select_year_mode == "Compare Years":
-    # Display the market share list in a table
+    # Create & Format Table
     market_share_table = pd.DataFrame(agency_market_share)
     market_share_table["Change in Grant Amount ($)"] = market_share_table["Change in Grant Amount ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=2)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=2)}</span>')
     market_share_table["Change in Market Share (%)"] = market_share_table["Change in Market Share (%)"].apply(lambda x: f'<span style="color: red;">{x:.2f}%</span>' if x < 0 else f'<span style="color: green;">{x:.2f}%</span>')
