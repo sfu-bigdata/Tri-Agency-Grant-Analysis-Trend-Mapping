@@ -220,20 +220,20 @@ if select_year_mode == "Single Year":
 
     # Compute U15 + UVic mean Program Data
     total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, U15, False, year, year)
-    table_data.append(["U15 + UVic Mean", millify(total_amount_u15, precision=1), millify(market_share_u15, precision=2), millify(num_grants_u15, precision=1), millify(avg_grant_amount_u15, precision=1)])
+    table_data.append(["U15 + UVic Mean", millify(total_amount_u15, precision=2), millify(market_share_u15, precision=2), millify(num_grants_u15, precision=1), millify(avg_grant_amount_u15, precision=1)])
 
     # Compute U15 + UVic median Program Data
     total_amount_u15_median, market_share_u15_median, num_grants_u15_median, avg_grant_amount_u15_median = compute_years(data_label, U15, True, year, year)
-    table_data.append(["U15 + UVic Median", millify(total_amount_u15_median, precision=1), millify(market_share_u15_median, precision=2), millify(num_grants_u15_median, precision=1), millify(avg_grant_amount_u15_median, precision=1)])
+    table_data.append(["U15 + UVic Median", millify(total_amount_u15_median, precision=2), millify(market_share_u15_median, precision=2), millify(num_grants_u15_median, precision=1), millify(avg_grant_amount_u15_median, precision=1)])
 
     # Compute SFU Program Data
     total_amount_sfu, market_share_sfu, num_grants_sfu, avg_grant_amount_sfu = compute_years(data_label, ["Simon Fraser University"], False, year, year)
-    table_data.append(["Simon Fraser University", millify(total_amount_sfu, precision=1), millify(market_share_sfu, precision=2), millify(num_grants_sfu), millify(avg_grant_amount_sfu, precision=1)])
+    table_data.append(["Simon Fraser University", millify(total_amount_sfu, precision=2), millify(market_share_sfu, precision=2), millify(num_grants_sfu, precision=1), millify(avg_grant_amount_sfu, precision=1)])
     
     # Compute U15 Program Data
     for u15 in U15:
         total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, [u15], False, year, year)
-        table_data.append([u15, millify(total_amount_u15, precision=1), millify(market_share_u15, precision=2), millify(num_grants_u15), millify(avg_grant_amount_u15, precision=1)])
+        table_data.append([u15, millify(total_amount_u15, precision=2), millify(market_share_u15, precision=2), millify(num_grants_u15, precision=1), millify(avg_grant_amount_u15, precision=1)])
 
     # Create & Display Table
     columns = ["Institution", "Total Amount ($)", "Market Share (%)", "Number of Awards", "Avg Award Amount ($)"]
@@ -258,20 +258,20 @@ elif select_year_mode == "Range of Years":
 
     # Compute U15 + UVic Mean Program Data
     total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, U15, False, start_year, end_year)
-    table_data.append(["U15 + UVic Mean", millify(total_amount_u15, precision=1), millify(market_share_u15, precision=2), millify(num_grants_u15, precision=1), millify(avg_grant_amount_u15, precision=1)])
+    table_data.append(["U15 + UVic Mean", millify(total_amount_u15, precision=2), millify(market_share_u15, precision=2), millify(num_grants_u15, precision=1), millify(avg_grant_amount_u15, precision=1)])
 
     # Compute U15 + UVic median Program Data
     total_amount_u15_median, market_share_u15_median, num_grants_u15_median, avg_grant_amount_u15_median = compute_years(data_label, U15, True, start_year, end_year)
-    table_data.append(["U15 + UVic Median", millify(total_amount_u15_median, precision=1), millify(market_share_u15_median, precision=2), millify(num_grants_u15_median, precision=1), millify(avg_grant_amount_u15_median, precision=1)])
+    table_data.append(["U15 + UVic Median", millify(total_amount_u15_median, precision=2), millify(market_share_u15_median, precision=2), millify(num_grants_u15_median, precision=1), millify(avg_grant_amount_u15_median, precision=1)])
 
     # Compute SFU Program Data
     total_amount_sfu, market_share_sfu, num_grants_sfu, avg_grant_amount_sfu = compute_years(data_label, ["Simon Fraser University"], False, start_year, end_year)
-    table_data.append(["Simon Fraser University", millify(total_amount_sfu, precision=1), millify(market_share_sfu, precision=2), millify(num_grants_sfu), millify(avg_grant_amount_sfu, precision=1)])
+    table_data.append(["Simon Fraser University", millify(total_amount_sfu, precision=2), millify(market_share_sfu, precision=2), millify(num_grants_sfu, precision=1), millify(avg_grant_amount_sfu, precision=1)])
     
     # Compute U15 Program Data
     for u15 in U15:
         total_amount_u15, market_share_u15, num_grants_u15, avg_grant_amount_u15 = compute_years(data_label, [u15], False, start_year, end_year)
-        table_data.append([u15, millify(total_amount_u15, precision=1), millify(market_share_u15, precision=2), millify(num_grants_u15), millify(avg_grant_amount_u15, precision=1)])
+        table_data.append([u15, millify(total_amount_u15, precision=2), millify(market_share_u15, precision=2), millify(num_grants_u15, precision=1), millify(avg_grant_amount_u15, precision=1)])
 
     # Create & Display Table
     columns = ["Institution", "Total Amount ($)", "Market Share (%)", "Number of Awards", "Avg Award Amount ($)"]
@@ -313,7 +313,7 @@ elif select_year_mode == "Compare Years":
 
     # Create & Format Table
     df = pd.DataFrame(table_data, columns=["University", "Total Amount Change ($)", "Market Share Change (%)", "Number of Grants Change", "Average Grant Amount Change ($)"])
-    df["Total Amount Change ($)"] = df["Total Amount Change ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
+    df["Total Amount Change ($)"] = df["Total Amount Change ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=2)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     df["Market Share Change (%)"] = df["Market Share Change (%)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=2)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     df["Number of Grants Change"] = df["Number of Grants Change"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')
     df["Average Grant Amount Change ($)"] = df["Average Grant Amount Change ($)"].apply(lambda x: f'<span style="color: red;">{millify(x, precision=1)}</span>' if x < 0 else f'<span style="color: green;">{millify(x, precision=1)}</span>')

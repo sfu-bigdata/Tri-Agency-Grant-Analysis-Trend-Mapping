@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import seaborn as sns
 from millify import millify
@@ -76,6 +77,30 @@ if st.checkbox("Show Table"):
         file_name=f"{dashboard_type}_marketshare_data.csv",
         mime="text/csv"
     )
+
+## Word Cloud
+st.subheader("Keyword Word Cloud")
+
+# Create a word cloud from the top 100 keywords
+wordcloud_data = keyword_freq_df.nlargest(100, 'Frequency')[['Keyword', 'Frequency']]
+
+# Create a word cloud
+wordcloud = WordCloud(max_words=100, background_color="white").generate_from_frequencies(wordcloud_data['Keyword'].value_counts().to_dict())
+
+plt.figure(figsize=(10,6))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis("off")
+st.pyplot(plt.gcf())
+# Save the word cloud as image
+buf = io.BytesIO()
+plt.savefig(buf, format="png", bbox_inches="tight")
+buf.seek(0)
+st.download_button(
+    label="Export Word Cloud",
+    data=buf,
+    file_name=f"{dashboard_type}_keyword_wordcloud.png",
+    mime="image/png"
+)
 
 ## Keyword Grant Data
 st.title("Keyword Grant Data")
